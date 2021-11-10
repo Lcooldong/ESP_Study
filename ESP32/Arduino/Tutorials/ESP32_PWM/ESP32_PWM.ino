@@ -1,6 +1,6 @@
-const int ledPin = 16;
+const int ledPin = 13;
 
-const int freg = 5000;
+const int freg = 10;
 const int ledChannel = 0;
 const int resolution = 8;
 
