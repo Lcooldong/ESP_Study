@@ -1,52 +1,73 @@
+/*********
+  Rui Santos
+  Complete project details at https://randomnerdtutorials.com  
+*********/
+
+// Load Wi-Fi library
 #include <WiFi.h>
 
-const char* ssid = "MJ_HOME";
-const char* password = "mj000000";
+//const char* ssid = "MJ_HOME";
+//const char* password = "mj000000";
 
+//const char* ssid = "LGU+_POLY";
+//const char* password = "@Polytech";
+
+// Replace with your network credentials
+const char* ssid = "IT";
+const char* password = "@Polytech";
+
+// Set web server port number to 80
 WiFiServer server(80);
 
+// Variable to store the HTTP request
 String header;
+
+// Auxiliar variables to store the current output state
 String output26State = "off";
 String output27State = "off";
+
+// Assign output variables to GPIO pins
 const int output26 = 26;
 const int output27 = 27;
+
+// Current time
 unsigned long currentTime = millis();
 // Previous time
 unsigned long previousTime = 0; 
 // Define timeout time in milliseconds (example: 2000ms = 2s)
 const long timeoutTime = 2000;
 
-
 void setup() {
   Serial.begin(115200);
+  // Initialize the output variables as outputs
   pinMode(output26, OUTPUT);
   pinMode(output27, OUTPUT);
+  // Set outputs to LOW
   digitalWrite(output26, LOW);
   digitalWrite(output27, LOW);
 
+  // Connect to Wi-Fi network with SSID and password
   Serial.print("Connecting to ");
   Serial.println(ssid);
-
   //와이파이 시작
   WiFi.begin(ssid, password);
   // 와이파이 연결이 안되면 참, 연결이 되면 거짓
-  while(WiFi.status() != WL_CONNECTED){
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.println(".");
+    Serial.print(".");
   }
-
+  // Print local IP address and start web server
   Serial.println("");
   Serial.println("WiFi connected.");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
-  // 서버 시작
   server.begin();
 }
 
-
-void loop() {
+void loop(){
   // 서버가 사용가능하다면 클라이언트가 들어올 수 있음(true)
-  WiFiClient client = server.available();
+  WiFiClient client = server.available();   // Listen for incoming clients
+
   if (client) {                             // If a new client connects,
     currentTime = millis();
     previousTime = currentTime;
