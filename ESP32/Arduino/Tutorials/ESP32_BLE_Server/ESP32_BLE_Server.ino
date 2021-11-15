@@ -6,15 +6,21 @@
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
 
-#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
-#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
 
+// Bluetooth Serial Port Profile 같은 UART 구현 UUID
+#define SERVICE_UUID           "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
+#define CHARACTERISTIC_UUID_RX "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
+#define CHARACTERISTIC_UUID_TX "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
+
+// 편하게 쓰려고 포인터 미리 선언
 BLEServer* pServer = NULL;
-BLEChracteristic* pTxCharacteristic;
+BLECharacteristic * pTxCharacteristic;
 uint8_t txValue = 0;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 
+
+//ESP32 연결 상태 콜백함수
 class MyServerCallbacks: public BLEServerCallbacks{
   void onConnect(BLEServer* pServer){
     deviceConnected = true;
@@ -24,7 +30,9 @@ class MyServerCallbacks: public BLEServerCallbacks{
   }
 };
 
+// ESP32 데이터를 입력받는 콜백함수
 class MyCallbacks: public BLECharacteristicCallbacks{
+  // 데이터 받아옴
   void onWrite(BLECharacteristic* pCharacteristic){
     std::string rxValue = pCharacteristic->getValue();
 
@@ -42,29 +50,37 @@ class MyCallbacks: public BLECharacteristicCallbacks{
 void setup() {
   Serial.begin(115200);
   Serial.println("Starting BLE work!");
-
+  // BLE 생성
   BLEDevice::init("ESP32_BLE_SERVER");
-  BLEServer *pServer = BLEDevice::createServer();
+  // 서버 생성
+  pServer = BLEDevice::createServer();
+  // 연결 상태 콜백함수 등록
+  pServer->setCallbacks(new MyServerCallbacks());
+
+  // 서비스 UUID 등록
   BLEService *pService = pServer->createService(SERVICE_UUID);
 
-  //characteristic setup
-  BLECharacteristic *pCharacteristic = pService->createCharacteristic(
-                                         CHARACTERISTIC_UUID,
-                                         BLECharacteristic::PROPERTY_READ |
-                                         BLECharacteristic::PROPERTY_WRITE
-                                       );
-  pCharacteristic->setValue("SET VALUE");
+  // 송신 특성
+  pTxCharacteristic = pService->createCharacteristic(
+                        CHARACTERISTIC_UUID_TX,
+                        BLECharacteristic::PROPERTY_NOTIFY
+                      );
+
+  pTxCharacteristic->addDescriptor(new BLE2902());
+
+  // 수신 특성
+  BLECharacteristic* pRxCharacteristic = pService->createCharacteristic(
+                                          CHARACTERISTIC_UUID_RX,
+                                          BLECharacteristic::PROPERTY_WRITE
+                                         );
+  // 수신 시 Callback 함수 호출                                       
+  pRxCharacteristic->setCallbacks(new MyCallbacks());
   
   // 서비스 시작
   pService->start();
-  // BLEAdvertising *pAdvertising = pServer->getAdvertising();  // this still is working for backward compatibility
-  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-  pAdvertising->addServiceUUID(SERVICE_UUID);
-  pAdvertising->setScanResponse(true);
-  pAdvertising->setMinPreferred(0x06);  // functions that help with iPhone connections issue
-  pAdvertising->setMinPreferred(0x12);
-  // 서버 시작
-  BLEDevice::startAdvertising();
+
+  // advertising 시작
+  pServer->getAdvertising()->start();
   Serial.println("Characteristic defined! Now you can read it in your phone!");
 }
 
@@ -73,9 +89,21 @@ void loop() {
   if (deviceConnected){
       sprintf(txBuffer, "%d\n", txValue);
       pTxCharacteristic->setValue((uint8_t*)txBuffer, strlen(txBuffer));
-      PTxCharacteristic->notify();
+      pTxCharacteristic->notify();
       txValue++;
+      delay(1000);
   }
-  count++;
-  delay(2000);
+
+  if (!deviceConnected && oldDeviceConnected){
+    delay(500);
+
+    pServer->startAdvertising();
+    Serial.println("start advertising");
+    oldDeviceConnected = deviceConnected;
+  }
+
+  if (deviceConnected && !oldDeviceConnected){
+      
+    oldDeviceConnected = deviceConnected;
+  }
 }
