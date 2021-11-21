@@ -82,22 +82,29 @@ void setup(){
   message.subject = "오늘의 날씨";
   message.addRecipient("애용", RECIPIENT_EMAIL);
 
+
+  // HTML 형식
+  
   /*Send HTML message*/
-  String htmlMsg = "<div style=\"color:#2f4468;\"><h1>안녕!</h1><p>- ㄴㅇㄱ 알 수 없는 정체</p></div>";
+  
+  String htmlMsg = "<div style=\"color:#2f4468;\"><h1>안녕!!</h1><p>- ㄴㅇㄱ 알 수 없는 정체</p></div>";
   message.html.content = htmlMsg.c_str();
   message.html.content = htmlMsg.c_str();
   message.text.charSet = "us-ascii";
   message.html.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
+  
 
+  // 있는 그대로 보내려면 아래 주석 사용
   /*
   //Send raw text message
-  String textMsg = "Hello World! - Sent from ESP board";
+  String textMsg = "보낼 내용! - Sent from ESP board";
   message.text.content = textMsg.c_str();
   message.text.charSet = "us-ascii";
   message.text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
   
   message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_low;
-  message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;*/
+  message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
+  */
 
   /* Set the custom message header */
   //message.addHeader("Message-ID: <abcde.fghij@gmail.com>");

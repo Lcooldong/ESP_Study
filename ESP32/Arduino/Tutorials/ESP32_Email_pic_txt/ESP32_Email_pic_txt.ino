@@ -32,11 +32,11 @@
 #define SMTP_PORT 465
 
 /* The log in credentials */
-#define AUTHOR_EMAIL "YOUR_EMAIL@XXXX.com"
-#define AUTHOR_PASSWORD "YOUR_EMAIL_PASS"
+#define AUTHOR_EMAIL "alarmrobotpolytech@gmail.com"
+#define AUTHOR_PASSWORD "@Polytech21"
 
 /* Recipient's email*/
-#define RECIPIENT_EMAIL "RECIPIENTE_EMAIL@XXXX.com"
+#define RECIPIENT_EMAIL "scooldong@gmail.com"
 /* The SMTP Session object used for Email sending */
 
 SMTPSession smtp;
@@ -92,14 +92,14 @@ void setup(){
   message.enable.chunking = true;
 
   /* Set the message headers */
-  message.sender.name = "ESP Mail";
+  message.sender.name = "보낸 사람";
   message.sender.email = AUTHOR_EMAIL;
 
-  message.subject = "Test sending Email with attachments and inline images from SD card and Flash";
-  message.addRecipient("Sara", RECIPIENT_EMAIL);
+  message.subject = "제목";
+  message.addRecipient("받는 사람", RECIPIENT_EMAIL);
 
   /** Two alternative content versions are sending in this example e.g. plain text and html */
-  String htmlMsg = "This message contains attachments: image and text file.";
+  String htmlMsg = "내용 : 메세지";
   message.html.content = htmlMsg.c_str();
   message.html.charSet = "utf-8";
   message.html.transfer_encoding = Content_Transfer_Encoding::enc_qp;
@@ -114,6 +114,7 @@ void setup(){
    * file name, MIME type, file path, file storage type,
    * transfer encoding and content encoding
   */
+  // 보낸 이미지
   att.descr.filename = "image.png";
   att.descr.mime = "image/png"; //binary data
   att.file.path = "/image.png";
@@ -121,9 +122,10 @@ void setup(){
   att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
   /* Add attachment to the message */
-  message.addAttachment(att);
+  message.addAttachment(att);   // 첨부
 
-  message.resetAttachItem(att);
+  //보낸 text 파일
+  message.resetAttachItem(att);   // 다른 것 보낼 때
   att.descr.filename = "text_file.txt";
   att.descr.mime = "text/plain";
   att.file.path = "/text_file.txt";
@@ -131,7 +133,7 @@ void setup(){
   att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
   /* Add attachment to the message */
-  message.addAttachment(att);
+  message.addAttachment(att);   // 첨부
 
   /* Connect to server with the session config */
   if (!smtp.connect(&session))
