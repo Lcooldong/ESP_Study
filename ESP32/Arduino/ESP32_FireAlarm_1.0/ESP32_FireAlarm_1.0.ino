@@ -2,42 +2,30 @@
 #define LED 5
 #define DHTTYPE DHT11
 #define DHTPIN 15
+#define SERVOPIN 27
 
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <ESP32_Servo.h>
 #include "DHT.h"
 
 DHT dht(DHTPIN, DHTTYPE);
-
+Servo servo1;
 
 // Update these with values suitable for your network.
 
 const char* ssid = "214ho";
 const char* password = "12345678";
-//const char* ssid = "LDH";
-//const char* password = "ehdgml43";
-//const char* ssid = "HCN_9E91";
-//const char* password = "7263FB9E90";
-//const char* ssid = "iptime";
-//const char* password = "";  //비번 없이도 가능
-//const char* ssid = "ㄱㄱㅈ";
-//const char* password = "atelsit84"; 
-//const char* ssid = "AndroidHotspot2221";
-//const char* password = "01086122221";  
-//const char* ssid = "LGU+_POLY";
-//const char* password = "@Polytech";  
-//const char* ssid = "IT";
-//const char* password = "@Polytech";  
 const char* mqtt_server = "broker.mqtt-dashboard.com";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 unsigned long lastMsg = 0;
 #define MSG_BUFFER_SIZE  (50)
-//#define MSG_BUFFER_SIZE  (28)
+#define DHT_BUFFER_SIZE  (5)  // null까지 포함한 길이
 char msg[MSG_BUFFER_SIZE];
-char strhumi[5];
-char strtemp[5];
+char strhumi[DHT_BUFFER_SIZE];
+char strtemp[DHT_BUFFER_SIZE];
 int value = 0;
 
 void setup_wifi() {
@@ -79,9 +67,17 @@ void callback(char* topic, byte* payload, unsigned int length) {
   if ((char)payload[0] == '1') {
     Serial.println("1받음");
     digitalWrite(BUILTIN_LED, HIGH);
+    for(int posDegrees = 0; posDegrees <= 180; posDegrees++) {
+      servo1.write(posDegrees); 
+      delay(5);
+    }
   } else {
     Serial.println("0받음");
     digitalWrite(BUILTIN_LED, LOW);
+    for(int posDegrees = 180; posDegrees >= 0; posDegrees--) {
+      servo1.write(posDegrees); 
+      delay(5);
+    }
   }
 }
 
@@ -117,6 +113,8 @@ void setup() {
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback); // callback 함수 연결
   dht.begin();
+  servo1.attach(SERVOPIN);
+  
 }
 
 void loop() {
@@ -139,21 +137,14 @@ void loop() {
   unsigned long now = millis();
   if (now - lastMsg > 2000) {
     lastMsg = now;
-    //snprintf (msg, MSG_BUFFER_SIZE, "%.1f, %.1f", h, t);
-    snprintf(strhumi, 5, "%.1f", h);
-    snprintf(strtemp, 5, "%.1f", t);
-    
+
+    snprintf(strhumi, DHT_BUFFER_SIZE, "%.1f", h);
+    snprintf(strtemp, DHT_BUFFER_SIZE, "%.1f", t);
     String dhtData = "{\"humidity\":\""+String(strhumi)+"\", \"temperature\":\""+String(strtemp) +"\"}";
-    dhtData.toCharArray(msg, dhtData.length()+1); //string -> char[], char*
-    //Serial.println(dhtData.length()); //41
+    dhtData.toCharArray(msg, dhtData.length()+1); //string -> char[], char* 
     
-    //String dhtData = "{\"humidity\":\""+String(h)+"\", \"temperature\":\""+String(t) +"\"}";
-    //String dhtData = "{\"humidity\":\""+String(h)+"\", \"temperature\":\""+String(t) +"\"}";
-    //snprintf (msg, MSG_BUFFER_SIZE, "{\"humidity\":\""+String(%.1f)+"\", \"temperature\":\""+String(%.1f) +"\"}", h, t);
     Serial.print("Publish message: ");
-    //Serial.println(dhtData);
     Serial.println(msg);
     client.publish("FireAlarm/Polytech/A1", msg);  // 브로커로 송신(publish, payload)
-    //client.publish("FireAlarm/Polytech/A1", dhtData);
   }
 }
