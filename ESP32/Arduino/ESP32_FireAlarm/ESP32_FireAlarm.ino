@@ -1,14 +1,33 @@
-#define BUILTIN_LED 9
+#define BUILTIN_LED 2
 #define LED 5
+#define DHTTYPE DHT11
+#define DHTPIN 15
 
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include "DHT.h"
+
+DHT dht(DHTPIN, DHTTYPE);
+
 
 // Update these with values suitable for your network.
 
-
 const char* ssid = "214ho";
-const char* password = "12345678";  
+const char* password = "12345678";
+//const char* ssid = "LDH";
+//const char* password = "ehdgml43";
+//const char* ssid = "HCN_9E91";
+//const char* password = "7263FB9E90";
+//const char* ssid = "iptime";
+//const char* password = "";  //비번 없이도 가능
+//const char* ssid = "ㄱㄱㅈ";
+//const char* password = "atelsit84"; 
+//const char* ssid = "AndroidHotspot2221";
+//const char* password = "01086122221";  
+//const char* ssid = "LGU+_POLY";
+//const char* password = "@Polytech";  
+//const char* ssid = "IT";
+//const char* password = "@Polytech";  
 const char* mqtt_server = "broker.mqtt-dashboard.com";
 
 WiFiClient espClient;
@@ -56,22 +75,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
   // Switch on the LED if an 1 was received as first character
   if ((char)payload[0] == '1') {
     Serial.println("1받음");
-    digitalWrite(LED, HIGH);
-//    for(int i=0; i < 255; i++)
-//    {
-//      ledcWrite(LED, i);      
-//      delay(5);
-//    }
+    digitalWrite(BUILTIN_LED, HIGH);
   } else {
     Serial.println("0받음");
-    digitalWrite(LED, LOW);
-//    for(int i=256; i>=0; i--)
-//    {
-//      ledcWrite(LED, i);
-//      delay(5);
-//    }
+    digitalWrite(BUILTIN_LED, LOW);
   }
-
 }
 
 void reconnect() {
@@ -85,7 +93,7 @@ void reconnect() {
     if (client.connect(clientId.c_str())) {
       Serial.println("connected");
       // Once connected, publish an announcement...
-      client.publish("FireAlarm/Polytech/A1", "hello 214ho");    // 재연결 브로커로 송신(publish, payload)
+      client.publish("FireAlarm/Polytech/A1", "reconnected");    // 재연결 브로커로 송신(publish, payload)
       // ... and resubscribe
       client.subscribe("FireAlarm/Polytech/Server");  // 재연결 구독(subscribe)->브로커에서 수신(payload 받아옴)
     } else {
@@ -105,6 +113,7 @@ void setup() {
   setup_wifi();
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback); // callback 함수 연결
+  dht.begin();
 }
 
 void loop() {
@@ -115,11 +124,19 @@ void loop() {
   }
   client.loop();
 
+  float h = dht.readHumidity();// 습도를 측정합니다.
+  float t = dht.readTemperature();// 온도를 측정합니다.
+  float f = dht.readTemperature(true);// 화씨 온도를 측정합니다.
+
+  if (isnan(h) || isnan(t) || isnan(f)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+  
   unsigned long now = millis();
   if (now - lastMsg > 2000) {
     lastMsg = now;
-    ++value;
-    snprintf (msg, MSG_BUFFER_SIZE, "hello 214ho #%ld", value);
+    snprintf (msg, MSG_BUFFER_SIZE, "%.1f, %.1f", h, t);
     Serial.print("Publish message: ");
     Serial.println(msg);
     client.publish("FireAlarm/Polytech/A1", msg);  // 브로커로 송신(publish, payload)
