@@ -7,7 +7,7 @@
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 //#define VCC 13
 
-
+#include <WiFiManager.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ESP32_Servo.h>
@@ -25,7 +25,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 //const char* ssid = "214ho";
 //const char* password = "12345678";
-const char* ssid = "LGU+_POLY";
+const char* ssid = "IT";
 const char* password = "@Polytech";
 const char* mqtt_server = "broker.mqtt-dashboard.com";
 
@@ -119,11 +119,14 @@ void reconnect() {
 }
 
 void setup() {
+  WiFi.mode(WIFI_STA);
+  Serial.begin(115200);
+  WiFiManager wm;
+  //wm.resetSettings();
   pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
   pinMode(LED, OUTPUT);
   //pinMode(VCC, OUTPUT);
   //digitalWrite(VCC, HIGH);
-  Serial.begin(115200);
   setup_wifi();
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback); // callback 함수 연결
