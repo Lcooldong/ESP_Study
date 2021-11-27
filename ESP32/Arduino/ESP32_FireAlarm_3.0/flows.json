@@ -1,0 +1,216 @@
+[
+    {
+        "id": "4d4415d88d27e0bf",
+        "type": "tab",
+        "label": "FireAlarm",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "b883da192722757f",
+        "type": "ui_text",
+        "z": "4d4415d88d27e0bf",
+        "group": "1db7fa7c896775e4",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "humidity",
+        "format": "{{msg.payload.humidity}}",
+        "layout": "row-spread",
+        "className": "",
+        "x": 700,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "75f22184fe00530e",
+        "type": "mqtt in",
+        "z": "4d4415d88d27e0bf",
+        "name": "",
+        "topic": "FireAlarm/Polytech/A1",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "5ae449b91979201c",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 160,
+        "y": 80,
+        "wires": [
+            [
+                "12a94deec689d1fb"
+            ]
+        ]
+    },
+    {
+        "id": "7b3eec340488dcee",
+        "type": "mqtt out",
+        "z": "4d4415d88d27e0bf",
+        "name": "",
+        "topic": "FireAlarm/Polytech/Server",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "5ae449b91979201c",
+        "x": 730,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "05230dba5d538de8",
+        "type": "debug",
+        "z": "4d4415d88d27e0bf",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 710,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "c0ba6ca5f4954493",
+        "type": "ui_switch",
+        "z": "4d4415d88d27e0bf",
+        "name": "",
+        "label": "Lock",
+        "tooltip": "",
+        "group": "1db7fa7c896775e4",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "decouple": "false",
+        "topic": "topic",
+        "topicType": "msg",
+        "style": "",
+        "onvalue": "1",
+        "onvalueType": "str",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "0",
+        "offvalueType": "str",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 370,
+        "y": 280,
+        "wires": [
+            [
+                "7b3eec340488dcee"
+            ]
+        ]
+    },
+    {
+        "id": "141b72624c630655",
+        "type": "ui_text",
+        "z": "4d4415d88d27e0bf",
+        "group": "1db7fa7c896775e4",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "temperature",
+        "format": "{{msg.payload.temperature}}",
+        "layout": "row-spread",
+        "className": "",
+        "x": 710,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "7774a7a23ba864ab",
+        "type": "json",
+        "z": "4d4415d88d27e0bf",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 490,
+        "y": 80,
+        "wires": [
+            [
+                "b883da192722757f",
+                "141b72624c630655",
+                "05230dba5d538de8"
+            ]
+        ]
+    },
+    {
+        "id": "12a94deec689d1fb",
+        "type": "function",
+        "z": "4d4415d88d27e0bf",
+        "name": "",
+        "func": "msg.payload=String(msg.payload)\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 80,
+        "wires": [
+            [
+                "7774a7a23ba864ab"
+            ]
+        ]
+    },
+    {
+        "id": "1db7fa7c896775e4",
+        "type": "ui_group",
+        "name": "sensor",
+        "tab": "959589453e7f1daa",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "5ae449b91979201c",
+        "type": "mqtt-broker",
+        "name": "MQTT_DASHBOARD",
+        "broker": "broker.mqtt-dashboard.com",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "willMsg": {},
+        "sessionExpiry": ""
+    },
+    {
+        "id": "959589453e7f1daa",
+        "type": "ui_tab",
+        "name": "화재경보기",
+        "icon": "dashboard",
+        "order": 1,
+        "disabled": false,
+        "hidden": false
+    }
+]
