@@ -41,6 +41,8 @@ const int echo = 16;
 const int trig = 17;
 float duration,  distance;
 int sonarAlt = 0;
+const int irPin = 21;
+int ir;
 
 const char* ssid = "IT";
 const char* password = "@Polytech";
@@ -68,6 +70,7 @@ void setup() {
   Serial.begin(115200);
   timer_init();
   pinMode(LED, OUTPUT);
+  pinMode(irPin, INPUT);
   #if defined(__AVR_ATtiny85__) && (F_CPU == 16000000)
     clock_prescale_set(clock_div_1);
   #endif
@@ -124,12 +127,19 @@ void loop() {
   client.loop();
   
   sonar();
+  ir = digitalRead(irPin);
   if (sonarAlt <= 5){
     backward();
     stop_motor();
     uturn();
     delay(1000);
   }
+  if (ir == LOW){
+    forward();
+    stop_motor();
+    delay(1000);
+  }
+  
   if (count0 > 0) {
      // Comment out enter / exit to deactivate the critical section 
      portENTER_CRITICAL(&timerMux);
@@ -344,7 +354,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     case '3': right_turn(); break;
     case '4': backward(); break;
     case '5': stop_motor(); break;
-    case '6': rainbow(10); colorWipe(strip.Color(0,   0,   0), 50); break;
+    case '6': rainbow(3); colorWipe(strip.Color(0,   0,   0), 50); break;
   }
 }
 

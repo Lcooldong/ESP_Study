@@ -44,6 +44,8 @@ const int echo = 16;
 const int trig = 17;
 float duration,  distance;
 int sonarAlt = 0;
+const int irPin = 21;
+int ir;
 
 const char* ssid = "IT";
 const char* password = "@Polytech";
@@ -73,6 +75,7 @@ void setup() {
   Serial.begin(115200);
   timer_init();
   pinMode(LED, OUTPUT);
+  pinMode(irPin, INPUT);
   #if defined(__AVR_ATtiny85__) && (F_CPU == 16000000)
     clock_prescale_set(clock_div_1);
   #endif
@@ -151,6 +154,12 @@ void loop() {
   
   sonar();
   if (sonarAlt <= 5){
+    backward();
+    stop_motor();
+    uturn();
+    delay(1000);
+  }
+  if (ir == LOW){
     backward();
     stop_motor();
     uturn();
