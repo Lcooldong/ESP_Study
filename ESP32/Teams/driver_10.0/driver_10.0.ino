@@ -80,7 +80,7 @@ void setup() {
   colorWipe(strip.Color(0,   0,   0), 0);
   colorWipe(strip.Color(  255,   0, 0), 50); // Red
   
-  wm.resetSettings(); // 와이파이 리셋
+  //wm.resetSettings(); // 와이파이 리셋
   bool res;
   res = wm.autoConnect("RemoteCar");
   

@@ -1,3 +1,5 @@
+// not working well
+
 // WEMOS D1 mini ESP32 
 
 ////REAR-////
@@ -160,10 +162,10 @@ void loop() {
     delay(1000);
   }
   if (ir == LOW){
-    backward();
+    forward();
     stop_motor();
-    uturn();
     delay(1000);
+    
   }
   
   if (count0 > 0) {

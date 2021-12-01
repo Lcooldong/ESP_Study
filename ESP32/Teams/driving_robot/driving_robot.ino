@@ -138,7 +138,7 @@ void loop()	{
 #if 1
 	while(Esp12s.available() > 0){
 		String cmd = Esp12s.readStringUntil(13);
-		cmd.trim();//+IPD,1,3:9
+		cmd.trim();//+IPD,1,3:9   빈 라인 제거
 #if 0
 		printg(0, "recevie: %s", cmd.c_str());
 #endif
