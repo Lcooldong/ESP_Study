@@ -1,3 +1,4 @@
+// 참고 https://www.basic4mcu.com/bbs/board.php?bo_table=gac&wr_id=6598
 /*
  * SimpleReceiver.cpp
  *
@@ -38,8 +39,11 @@
 #include <IRremote.h>
 
 int IR_RECEIVE_PIN = 23;  // 데이터 핀
+int LED_PIN = 27;
+bool state = 0;
+int LED_mode = 0;
 uint32_t myRawdata= IrReceiver.decodedIRData.decodedRawData;
-
+uint32_t myCommand = IrReceiver.decodedIRData.command;
 
 void setup() {
     Serial.begin(115200);
@@ -48,6 +52,7 @@ void setup() {
 
     // 데이터 핀, 수신 확인용 LED<- 잘모르겠음
     IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK); // Start the receiver, enable feedback LED, take LED feedback pin from the internal boards definition
+    pinMode(LED_PIN, OUTPUT);
 
     Serial.print(F("Ready to receive IR signals at pin "));
     Serial.println(IR_RECEIVE_PIN);
@@ -80,7 +85,20 @@ void loop() {
         if (IrReceiver.decodedIRData.command == 0x10) {
             // do something
         } else if (IrReceiver.decodedIRData.command == 0x11) {
-            // do something else
-        }
-    }
+            digitalWrite(LED_PIN, state);
+            state = !state;
+            delay(3000);
+        } else if(IrReceiver.decodedIRData.command == 0x045){
+          if (LED_mode != 0){
+            LED_mode = 0;
+            digitalWrite(LED_PIN, LED_mode);
+              
+          }
+          else{
+            LED_mode = 1;
+            digitalWrite(LED_PIN, LED_mode);
+          }
+          delay(2000);
+        } 
+    }        
 }

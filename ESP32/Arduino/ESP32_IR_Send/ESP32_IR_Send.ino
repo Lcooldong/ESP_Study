@@ -69,9 +69,9 @@ void loop() {
     /*
      * Increment send values
      */
-    //sAddress += 0x0101;
+    sAddress += 0x0101;
     //sCommand += 0x11;
-    sAddress = 0x0001;
+    //sAddress = 0x0101;
     sCommand = 0x12;
     sRepeats++;
     // clip repeats at 4
