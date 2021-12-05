@@ -70,15 +70,9 @@ void loop() {
     /*
      * Increment send values
      */
-    sAddress += 0x0101;
-    //sCommand += 0x11;
-<<<<<<< Updated upstream
-    //sAddress = 0x0101;
-    sCommand = 0x12;
-=======
+
     sAddress = 0x0001;
     sCommand = 0x11;
->>>>>>> Stashed changes
     sRepeats++;
     // clip repeats at 4
     if (sRepeats > 4) {
