@@ -38,6 +38,7 @@ void setup() {
 /*
  * Be aware, that some protocols have 5, some 8 and some 16 bit Address
  */
+//  초기 값
 uint16_t sAddress = 0x0102;
 uint8_t sCommand = 0x34;
 uint8_t sRepeats = 0;
@@ -71,8 +72,13 @@ void loop() {
      */
     sAddress += 0x0101;
     //sCommand += 0x11;
+<<<<<<< Updated upstream
     //sAddress = 0x0101;
     sCommand = 0x12;
+=======
+    sAddress = 0x0001;
+    sCommand = 0x11;
+>>>>>>> Stashed changes
     sRepeats++;
     // clip repeats at 4
     if (sRepeats > 4) {
