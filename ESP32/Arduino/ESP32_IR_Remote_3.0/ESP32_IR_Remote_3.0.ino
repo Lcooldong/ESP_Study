@@ -2,6 +2,7 @@
 #include <IRremote.h>
 #define timeSeconds 0.1 // 초
 #define TIME_BUFFER_SIZE 30
+#define RAW_BUFFER_SIZE 11
 
 const int IR_RECEIVE_PIN = 23;  // 데이터 핀
 const int LED_PIN = 27;
@@ -14,7 +15,7 @@ unsigned long lastTrigger = 0;
 boolean startTimer = false;
 
 char strTime[TIME_BUFFER_SIZE];
-uint32_t myRawdata= IrReceiver.decodedIRData.decodedRawData;
+char hexbuf[RAW_BUFFER_SIZE];
 
 void setup() {
     Serial.begin(115200);
@@ -37,12 +38,9 @@ void loop() {
      */
      // 디코딩 된 정보 받으면
     if (IrReceiver.decode()) {
-
-        // Print a short summary of received data
-        IrReceiver.printIRResultShort(&Serial); // 받은 데이터 시리얼에 표시
         Serial.println();
-        Serial.print("RawData : ");
-        Serial.println(myRawdata);
+        // Print a short summary of received data1바이트 형식
+        IrReceiver.printIRResultShort(&Serial); // 받은 데이터 시리얼에 표시
         // 알 수 없는 것이 들어오면 추가 정보 출력
         if (IrReceiver.decodedIRData.protocol == UNKNOWN) {
             // We have an unknown protocol, print more info
@@ -50,29 +48,22 @@ void loop() {
         }
         Serial.println();
         IrReceiver.resume(); // Enable receiving of the next value
-
+        
         /*
          * Finally check the received data and perform actions according to the received commands
          */
-        if (IrReceiver.decodedIRData.command == 0x10) {
-            // do something
-        } else if (IrReceiver.decodedIRData.command == 0x45) {
-            startTimer = true;
-            lastTrigger = millis();   // 신호가 들어온 시간
-            Serial.print("작동 시간 : ");
-            Serial.println(lastTrigger);
-            if(flag == 0){
-                flag = 1;           //flag = 1 일 때는 추가 신호 안받음
-                state = !state;
-                delay(100);
-                Serial.print("state : ");
-                Serial.println(state);
-                digitalWrite(LED_PIN, state);
-                Serial.println("LED state Changed");
-            }
-        }
+        printRawData();
+        executeCommand();
     }
     timeInterval();
+}
+
+void executeCommand(){
+  uint16_t myCommand = IrReceiver.decodedIRData.command;
+  switch(myCommand){
+    case 0x45: LED_ON_OFF(); break;
+    case 0x46: break;
+  }
 }
 
 void timeInterval(){
@@ -85,5 +76,33 @@ void timeInterval(){
         Serial.println(strTime);
         flag = 0;
         startTimer = false;
+        Serial.println("Initializing");
     }
+}
+
+void printRawData(){
+    Serial.println("=============================");
+    Serial.print("RawData[DECIMAL] : ");
+    Serial.println(IrReceiver.decodedIRData.decodedRawData);
+    
+    snprintf(hexbuf, RAW_BUFFER_SIZE, "0x%08X", IrReceiver.decodedIRData.decodedRawData);
+    Serial.print("RawData[HEX]     : ");
+    Serial.println(hexbuf);
+    Serial.println("=============================");
+}
+
+void LED_ON_OFF(){
+    startTimer = true;
+    lastTrigger = millis();   // 신호가 들어온 시간
+    Serial.print("작동 시간 : ");
+    Serial.println(lastTrigger);
+    if(flag == 0){
+      flag = 1;           //flag = 1 일 때는 추가 신호 안받음
+      state = !state;
+      delay(100);
+      Serial.print("state : ");
+      Serial.println(state);
+      digitalWrite(LED_PIN, state);
+      Serial.println("LED state Changed");
+  }
 }
