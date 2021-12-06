@@ -20,11 +20,21 @@ boolean startTimer = false;
 
 char strTime[TIME_BUFFER_SIZE];
 char hexbuf[RAW_BUFFER_SIZE];
-char* storage[SAVE_DATA_SIZE];
+IRData* storage[SAVE_DATA_SIZE];
 
 uint16_t sAddress = 0x0000;
 uint8_t sCommand  = 0x00;
 uint8_t sRepeats  = 0;
+
+
+// Storage for the recorded code IR저장구조체
+struct storedIRDataStruct {
+    IRData receivedIRData;
+    // extensions for sendRaw
+    uint8_t rawCode[RAW_BUFFER_LENGTH]; // The durations if raw
+    uint8_t rawCodeLength; // The length of the code
+} sStoredIRData;
+
 
 
 void setup() {
@@ -74,8 +84,9 @@ void loop() {
         //storage[0] = (char *)IrReceiver.decodedIRData.command;
         //storage[0] = "dadada";
         //strncpy(storage[0], (char*)IrReceiver.decodedIRData.command, 16);
-        Serial.print("storage[0] : ");
-        Serial.println(storage[0]);
+        //storage[0] = IrReceiver.read();
+        //Serial.print("storage : ");
+        //Serial.println(storage[0]->command);
         //sendData();
         printRawData();
         executeCommand();
@@ -83,8 +94,39 @@ void loop() {
     timeInterval();
 }
 
+//void storeCode(IRData *aIRReceivedData) {
+//    if (aIRReceivedData->flags & IRDATA_FLAGS_IS_REPEAT) {
+//        Serial.println(F("Ignore repeat"));
+//        return;
+//    }
+//    if (aIRReceivedData->flags & IRDATA_FLAGS_IS_AUTO_REPEAT) {
+//        Serial.println(F("Ignore autorepeat"));
+//        return;
+//    }
+//    if (aIRReceivedData->flags & IRDATA_FLAGS_PARITY_FAILED) {
+//        Serial.println(F("Ignore parity error"));
+//        return;
+//    }
+//    /*
+//     * Copy decoded data
+//     */
+//    sStoredIRData.receivedIRData = *aIRReceivedData;
+//
+//    if (sStoredIRData.receivedIRData.protocol == UNKNOWN) {
+//        Serial.print(F("Received unknown code saving "));
+//        Serial.print(IrReceiver.results.rawlen - 1);
+//        Serial.println(F(" TickCounts as raw "));
+//        sStoredIRData.rawCodeLength = IrReceiver.results.rawlen - 1;
+//        IrReceiver.compensateAndStoreIRResultInArray(sStoredIRData.rawCode);
+//    } else {
+//        IrReceiver.printIRResultShort(&Serial);
+//        sStoredIRData.receivedIRData.flags = 0; // clear flags -esp. repeat- for later sending
+//        Serial.println();
+//    }
+//}
+
 void executeCommand(){
-  uint8_t myCommand = IrReceiver.decodedIRData.command;
+  uint16_t myCommand = IrReceiver.decodedIRData.command;
   switch(myCommand){
     case 0x45: LED_ON_OFF(); break;
     case 0x44: RGB_ON_OFF(0, 255); break;
