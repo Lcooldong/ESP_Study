@@ -98,14 +98,6 @@ void setup() {
 
   //setup_wifi();
   
-  
-  
-  for(int i = 0; i < cnt; i++){
-    ledcSetup(i, 5000, 8);
-    ledcAttachPin(enable[i], i);
-    pinMode(driver1[i], OUTPUT);
-    pinMode(driver2[i], OUTPUT);
-  }
 
   pinMode(trig, OUTPUT);
   pinMode(echo, INPUT);

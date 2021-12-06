@@ -10,11 +10,9 @@ const int IR_RECEIVE_PIN = 23;  // 데이터 핀
 const int LED_PIN = 27;
 const int BTN = 34;
 const int RGB[3] = {16, 17, 18};
-
-
+int colorState[3] = {0,};
 int flag = 0;
 int state = LOW;
-int colorState[3] = {0,};
 
 unsigned long now = millis();
 unsigned long lastTrigger = 0;
@@ -74,7 +72,8 @@ void loop() {
          * Finally check the received data and perform actions according to the received commands
          */
         //storage[0] = (char *)IrReceiver.decodedIRData.command;
-        storage[0] = "dadada";
+        //storage[0] = "dadada";
+        //strncpy(storage[0], (char*)IrReceiver.decodedIRData.command, 16);
         Serial.print("storage[0] : ");
         Serial.println(storage[0]);
         //sendData();
