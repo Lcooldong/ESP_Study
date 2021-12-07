@@ -47,5 +47,5 @@ void loop() {
     Serial.print("now : ");
     Serial.println(now);
   }
-  delay(1);  //
+  delay(1);  // core 1 충돌 방지용
 }
