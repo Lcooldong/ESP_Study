@@ -5,12 +5,15 @@
 #define TIME_BUFFER_SIZE 30
 #define RAW_BUFFER_SIZE 11
 #define SAVE_DATA_SIZE 5
+#define BTN 13
+#define LED_PIN 27
+#define IR_RECEIVE_PIN 23
 
-const int IR_RECEIVE_PIN = 23;  // 데이터 핀
-const int LED_PIN = 27;
-const int BTN = 34;
+//const int IR_RECEIVE_PIN = 23;  // 데이터 핀
+volatile boolean gLedState = LOW;
 const int RGB[3] = {16, 17, 18};
 int colorState[3] = {0,};
+int btnFlag = 0;
 int flag = 0;
 int state = LOW;
 
@@ -36,6 +39,39 @@ struct storedIRDataStruct {
     uint8_t rawCodeLength; // The length of the code
 } sStoredIRData;
 
+// 외부 인터럽트 구현, 내부는 계산만 하는게 좋음
+portMUX_TYPE synch = portMUX_INITIALIZER_UNLOCKED;  // 낮은 HZ일때 도움됨
+void IRAM_ATTR buttonPressed(){
+  portENTER_CRITICAL(&synch);
+  if (digitalRead(BTN)==HIGH){
+    if(btnFlag == 0){
+      btnFlag = 1;
+      gLedState = !gLedState;
+      digitalWrite(LED_PIN, gLedState);
+    }
+  }else
+  {
+    btnFlag = 0;  
+  }
+  portEXIT_CRITICAL(&synch);
+}
+//
+//void buttonPressed(){
+//  if (digitalRead(BTN)==LOW){
+//    if(btnFlag == 0){
+//      btnFlag = 1;
+//      Serial.println("Button Pressed");
+//      gLedState = !gLedState;
+//      digitalWrite(LED_PIN, gLedState);
+//    }
+//  }else
+//  {
+//    btnFlag = 0;
+//    Serial.println("Reloaded");  
+//  }
+//  delay(1000);
+//}
+
 
 
 void setup() {
@@ -52,12 +88,14 @@ void setup() {
     Serial.println(IR_SEND_PIN);
     pinMode(LED_PIN, OUTPUT);
     for(int i = 0; i<3; i++){
-      ledcSetup(i, 5000, 8);
+      ledcSetup(i, 500, 8);
       ledcAttachPin(RGB[i], i);
       ledcWrite(i, 0);
     }
-    pinMode(BTN, INPUT_PULLUP);
+    pinMode(BTN, INPUT);
     digitalWrite(LED_PIN, LOW);
+
+    attachInterrupt(digitalPinToInterrupt(BTN), buttonPressed, FALLING); 
 }
 
 
@@ -66,6 +104,8 @@ void loop() {
      * Check if received data is available and if yes, try to decode it.
      * Decoded result is in the IrReceiver.decodedIRData structure.
      */
+    
+    //Serial.println(digitalRead(BTN)); 
      // 디코딩 된 정보 받으면
     if (IrReceiver.decode()) {
         Serial.println();
@@ -90,6 +130,7 @@ void loop() {
         executeCommand();
     }
     timeInterval();
+    delay(1);
 }
 
 //void storeCode(IRData *aIRReceivedData) {
@@ -123,13 +164,14 @@ void loop() {
 //    }
 //}
 
+
 void executeCommand(){
   uint8_t myCommand = IrReceiver.decodedIRData.command;
   switch(myCommand){
     case 0x45: LED_ON_OFF(); break;
     case 0x44: RGB_ON_OFF(0, 255); break;
     case 0x40: RGB_ON_OFF(1, 255); break;
-    case 0x43: RGB_ON_OFF(2, 255); break;
+    case 0x43: RGB_ON_OFF(2, 127); break;
   }
 }
 
