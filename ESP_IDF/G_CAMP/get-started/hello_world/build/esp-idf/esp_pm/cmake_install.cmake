@@ -1,4 +1,4 @@
-# Install script for directory: C:/esp-idf/components/esp_pm
+# Install script for directory: D:/ProGram/ESP_IDF/components/esp_pm
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

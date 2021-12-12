@@ -1,4 +1,4 @@
-# Install script for directory: C:/esp-idf/components/newlib/port
+# Install script for directory: D:/ProGram/ESP_IDF/components/newlib/port
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

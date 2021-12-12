@@ -1,4 +1,4 @@
-# Install script for directory: C:/esp-idf/components/esp_hw_support/port/esp32
+# Install script for directory: D:/ProGram/ESP_IDF/components/esp_hw_support/port/esp32
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

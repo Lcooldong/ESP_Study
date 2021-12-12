@@ -1,4 +1,4 @@
-# Install script for directory: C:/esp-idf/components/esp_local_ctrl
+# Install script for directory: D:/ProGram/ESP_IDF/components/esp_local_ctrl
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

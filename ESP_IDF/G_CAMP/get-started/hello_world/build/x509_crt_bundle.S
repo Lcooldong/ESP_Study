@@ -1,4 +1,4 @@
-/* * Data converted from D:/Github/ESP/ESP_IDF/G_CAMP/get-started/hello_world/build/esp-idf/mbedtls/x509_crt_bundle
+/* * Data converted from D:/ESP/ESP_IDF/G_CAMP/get-started/hello_world/build/esp-idf/mbedtls/x509_crt_bundle
  */
 .data
 .section .rodata.embedded

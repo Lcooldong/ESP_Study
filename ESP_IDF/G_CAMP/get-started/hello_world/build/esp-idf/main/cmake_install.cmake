@@ -1,4 +1,4 @@
-# Install script for directory: D:/Github/ESP/ESP_IDF/G_CAMP/get-started/hello_world/main
+# Install script for directory: D:/ESP/ESP_IDF/G_CAMP/get-started/hello_world/main
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

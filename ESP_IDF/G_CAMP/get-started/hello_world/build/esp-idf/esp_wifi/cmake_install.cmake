@@ -1,4 +1,4 @@
-# Install script for directory: C:/esp-idf/components/esp_wifi
+# Install script for directory: D:/ProGram/ESP_IDF/components/esp_wifi
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

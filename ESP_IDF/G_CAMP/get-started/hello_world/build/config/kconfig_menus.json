@@ -193,7 +193,7 @@
                     }
                 ],
                 "depends_on": null,
-                "help": "Select the way the application is built.\n\nBy default, the application is built as a binary file in a format compatible with\nthe ESP-IDF bootloader. In addition to this application, 2nd stage bootloader is\nalso built. Application and bootloader binaries can be written into flash and\nloaded/executed from there.\n\nAnother option, useful for only very small and limited applications, is to only link\nthe .elf file of the application, such that it can be loaded directly into RAM over\nJTAG. Note that since IRAM and DRAM sizes are very limited, it is not possible to\nbuild any complex application this way. However for kinds of testing and debugging,\nthis option may provide faster iterations, since the application does not need to be\nwritten into flash.\nNote that at the moment, ESP-IDF does not contain all the startup code required to\ninitialize the CPUs and ROM memory (data/bss). Therefore it is necessary to execute\na bit of ROM code prior to executing the application. A gdbinit file may look as follows (for ESP32):\n\n    # Connect to a running instance of OpenOCD\n    target remote :3333\n    # Reset and halt the target\n    mon reset halt\n    # Run to a specific point in ROM code,\n    #  where most of initialization is complete.\n    thb *0x40007d54\n    c\n    # Load the application into RAM\n    load\n    # Run till app_main\n    tb app_main\n    c\n\nExecute this gdbinit file as follows:\n\n    xtensa-esp32-elf-gdb build/app-name.elf -x gdbinit\n\nExample gdbinit files for other targets can be found in tools/test_apps/system/gdb_loadable_elf/\n\nRecommended sdkconfig.defaults for building loadable ELF files is as follows.\nCONFIG_APP_BUILD_TYPE_ELF_RAM is required, other options help reduce application\nmemory footprint.\n\n    CONFIG_APP_BUILD_TYPE_ELF_RAM=y\n    CONFIG_VFS_SUPPORT_TERMIOS=\n    CONFIG_NEWLIB_NANO_FORMAT=y\n    CONFIG_ESP_SYSTEM_PANIC_PRINT_HALT=y\n    CONFIG_ESP_DEBUG_STUBS_ENABLE=\n    CONFIG_ESP_ERR_TO_NAME_LOOKUP=",
+                "help": "Select the way the application is built.\n\nBy default, the application is built as a binary file in a format compatible with\nthe ESP-IDF bootloader. In addition to this application, 2nd stage bootloader is\nalso built. Application and bootloader binaries can be written into flash and\nloaded/executed from there.\n\nAnother option, useful for only very small and limited applications, is to only link\nthe .elf file of the application, such that it can be loaded directly into RAM over\nJTAG. Note that since IRAM and DRAM sizes are very limited, it is not possible to\nbuild any complex application this way. However for kinds of testing and debugging,\nthis option may provide faster iterations, since the application does not need to be\nwritten into flash.\nNote that at the moment, ESP-IDF does not contain all the startup code required to\ninitialize the CPUs and ROM memory (data/bss). Therefore it is necessary to execute\na bit of ROM code prior to executing the application. A gdbinit file may look as follows (for ESP32):\n\n    # Connect to a running instance of OpenOCD\n    target remote :3333\n    # Reset and halt the target\n    mon reset halt\n    # Run to a specific point in ROM code,\n    #  where most of initialization is complete.\n    thb *0x40007901\n    c\n    # Load the application into RAM\n    load\n    # Run till app_main\n    tb app_main\n    c\n\nExecute this gdbinit file as follows:\n\n    xtensa-esp32-elf-gdb build/app-name.elf -x gdbinit\n\nExample gdbinit files for other targets can be found in tools/test_apps/system/gdb_loadable_elf/\n\nRecommended sdkconfig.defaults for building loadable ELF files is as follows.\nCONFIG_APP_BUILD_TYPE_ELF_RAM is required, other options help reduce application\nmemory footprint.\n\n    CONFIG_APP_BUILD_TYPE_ELF_RAM=y\n    CONFIG_VFS_SUPPORT_TERMIOS=\n    CONFIG_NEWLIB_NANO_FORMAT=y\n    CONFIG_ESP_SYSTEM_PANIC_PRINT_HALT=y\n    CONFIG_ESP_DEBUG_STUBS_ENABLE=\n    CONFIG_ESP_ERR_TO_NAME_LOOKUP=",
                 "id": "build-type-application-build-type",
                 "name": "APP_BUILD_TYPE",
                 "title": "Application build type",
@@ -1785,7 +1785,7 @@
             },
             {
                 "children": [],
-                "depends_on": "!ESP32_COMPATIBLE_PRE_V3_1_BOOTLOADERS",
+                "depends_on": null,
                 "help": "Generate an MD5 checksum for the partition table for protecting the\nintegrity of the table. The generation should be turned off for legacy\nbootloaders which cannot recognize the MD5 checksum in the partition\ntable.",
                 "id": "PARTITION_TABLE_MD5",
                 "name": "PARTITION_TABLE_MD5",
@@ -3083,6 +3083,28 @@
                                 "range": null,
                                 "title": "BLE adv report flow control supported",
                                 "type": "bool"
+                            },
+                            {
+                                "children": [
+                                    {
+                                        "children": [],
+                                        "depends_on": "BTDM_COEX_BT_OPTIONS",
+                                        "help": "Improve BLE ADV coexistence priority to make it better performance.\nFor example, BLE mesh need to enable this option to improve BLE adv performance.",
+                                        "id": "BTDM_COEX_BLE_ADV_HIGH_PRIORITY",
+                                        "name": "BTDM_COEX_BLE_ADV_HIGH_PRIORITY",
+                                        "range": null,
+                                        "title": "Improve BLE ADV priority for WiFi & BLE coexistence",
+                                        "type": "bool"
+                                    }
+                                ],
+                                "depends_on": "ESP32_WIFI_SW_COEXIST_ENABLE",
+                                "help": "Options of Bluetooth Side of WiFi and bluetooth coexistence.",
+                                "id": "BTDM_COEX_BT_OPTIONS",
+                                "is_menuconfig": true,
+                                "name": "BTDM_COEX_BT_OPTIONS",
+                                "range": null,
+                                "title": "Coexistence Bluetooth Side Options",
+                                "type": "menu"
                             }
                         ],
                         "depends_on": null,
@@ -3734,7 +3756,7 @@
                                                             {
                                                                 "children": [],
                                                                 "depends_on": "ESP32C3_RTC_CLK_SRC_INT_RC && <choice BT_CTRL_LOW_POWER_CLOCK>",
-                                                                "help": "Internal 150kHz RC oscillator. The accuracy of this clock is a lot larger than 500ppm which is required\nin Bluetooth communication, so don't select this option in scenarios such as BLE connection state.",
+                                                                "help": "Internal 150kHz RC oscillator.",
                                                                 "id": "BT_CTRL_LPCLK_SEL_RTC_SLOW",
                                                                 "name": "BT_CTRL_LPCLK_SEL_RTC_SLOW",
                                                                 "range": null,
@@ -3802,27 +3824,6 @@
                                 "range": null,
                                 "title": null,
                                 "type": "int"
-                            },
-                            {
-                                "children": [
-                                    {
-                                        "children": [],
-                                        "depends_on": "BT_CTRL_AGC_RECORRECT_EN",
-                                        "help": "Enable coded phy AGC recorrect",
-                                        "id": "BT_CTRL_CODED_AGC_RECORRECT_EN",
-                                        "name": "BT_CTRL_CODED_AGC_RECORRECT_EN",
-                                        "range": null,
-                                        "title": "Enable coded phy AGC recorrect",
-                                        "type": "bool"
-                                    }
-                                ],
-                                "depends_on": null,
-                                "help": "Enable uncoded phy AGC recorrect",
-                                "id": "BT_CTRL_AGC_RECORRECT_EN",
-                                "name": "BT_CTRL_AGC_RECORRECT_EN",
-                                "range": null,
-                                "title": "Enable HW AGC recorrect",
-                                "type": "bool"
                             }
                         ],
                         "depends_on": null,
@@ -4599,8 +4600,8 @@
                                                 "children": [],
                                                 "depends_on": "BT_GATTS_ENABLE && BT_BLUEDROID_ENABLED",
                                                 "help": "Maximum GATT Server Profiles Count",
-                                                "id": "BT_GATT_MAX_SR_PROFILES",
-                                                "name": "BT_GATT_MAX_SR_PROFILES",
+                                                "id": "BT_GATT_SR_PROFILES",
+                                                "name": "BT_GATT_SR_PROFILES",
                                                 "range": null,
                                                 "title": "Max GATT Server Profiles",
                                                 "type": "int"
@@ -6765,7 +6766,7 @@
                                     },
                                     {
                                         "children": [],
-                                        "depends_on": "(SPIRAM_USE_CAPS_ALLOC || SPIRAM_USE_MALLOC) && <choice BT_NIMBLE_MEM_ALLOC_MODE>",
+                                        "depends_on": "ESP32_SPIRAM_SUPPORT && <choice BT_NIMBLE_MEM_ALLOC_MODE>",
                                         "help": null,
                                         "id": "BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL",
                                         "name": "BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL",
@@ -6795,7 +6796,7 @@
                                     }
                                 ],
                                 "depends_on": null,
-                                "help": "Allocation strategy for NimBLE host stack, essentially provides ability to\nallocate all required dynamic allocations from,\n\n- Internal DRAM memory only\n- External SPIRAM memory only\n- Either internal or external memory based on default malloc()\n  behavior in ESP-IDF\n- Internal IRAM memory wherever applicable else internal DRAM",
+                                "help": "Allocation strategy for NimBLE host stack, essentially provides ability to\nallocate all required dynamic allocations from,\n\n- Internal DRAM memory only\n- External SPIRAM memory only\n- Either internal or external memory based on default malloc()\n  behavior in ESP-IDF\n- Internal IRAM memory wherever applicable else internal DRAM\n\nRecommended mode here is always internal, since that is most preferred\nfrom security perspective. But if application requirement does not\nallow sufficient free internal memory then alternate mode can be\nselected.",
                                 "id": "component-config-bluetooth-nimble-options-memory-allocation-strategy",
                                 "name": "BT_NIMBLE_MEM_ALLOC_MODE",
                                 "title": "Memory allocation strategy",
@@ -7437,26 +7438,6 @@
                                 "range": null,
                                 "title": "Enable extended advertising.",
                                 "type": "bool"
-                            },
-                            {
-                                "children": [],
-                                "depends_on": null,
-                                "help": "Set this option to use Esp Timer which has higher priority timer instead of FreeRTOS timer",
-                                "id": "BT_NIMBLE_USE_ESP_TIMER",
-                                "name": "BT_NIMBLE_USE_ESP_TIMER",
-                                "range": null,
-                                "title": "Enable Esp Timer for Nimble",
-                                "type": "bool"
-                            },
-                            {
-                                "children": [],
-                                "depends_on": "BT_NIMBLE_ENABLED",
-                                "help": "Set this option to enable blufi functionality.",
-                                "id": "BT_NIMBLE_BLUFI_ENABLE",
-                                "name": "BT_NIMBLE_BLUFI_ENABLE",
-                                "range": null,
-                                "title": "Enable blufi functionality",
-                                "type": "bool"
                             }
                         ],
                         "depends_on": null,
@@ -7506,7 +7487,7 @@
                             },
                             {
                                 "children": [],
-                                "depends_on": "(SPIRAM_USE_CAPS_ALLOC || SPIRAM_USE_MALLOC) && <choice BLE_MESH_MEM_ALLOC_MODE>",
+                                "depends_on": "ESP32_SPIRAM_SUPPORT && <choice BLE_MESH_MEM_ALLOC_MODE>",
                                 "help": null,
                                 "id": "BLE_MESH_MEM_ALLOC_MODE_EXTERNAL",
                                 "name": "BLE_MESH_MEM_ALLOC_MODE_EXTERNAL",
@@ -7516,7 +7497,7 @@
                             },
                             {
                                 "children": [],
-                                "depends_on": "<choice BLE_MESH_MEM_ALLOC_MODE>",
+                                "depends_on": "ESP32_SPIRAM_SUPPORT && <choice BLE_MESH_MEM_ALLOC_MODE>",
                                 "help": "Enable this option to use the default memory allocation strategy when\nexternal SPIRAM is enabled. See the SPIRAM options for more details.",
                                 "id": "BLE_MESH_MEM_ALLOC_MODE_DEFAULT",
                                 "name": "BLE_MESH_MEM_ALLOC_MODE_DEFAULT",
@@ -7536,7 +7517,7 @@
                             }
                         ],
                         "depends_on": "BLE_MESH",
-                        "help": "Allocation strategy for BLE Mesh stack, essentially provides ability to\nallocate all required dynamic allocations from,\n\n- Internal DRAM memory only\n- External SPIRAM memory only\n- Either internal or external memory based on default malloc()\n  behavior in ESP-IDF\n- Internal IRAM memory wherever applicable else internal DRAM\n\nRecommended mode here is always internal (*), since that is most preferred\nfrom security perspective. But if application requirement does not\nallow sufficient free internal memory then alternate mode can be\nselected.\n\n(*) In case of ESP32-S2/ESP32-S3, hardware allows encryption of external\nSPIRAM contents provided hardware flash encryption feature is enabled.\nIn that case, using external SPIRAM allocation strategy is also safe choice\nfrom security perspective.",
+                        "help": "Allocation strategy for BLE Mesh stack, essentially provides ability to\nallocate all required dynamic allocations from,\n\n- Internal DRAM memory only\n- External SPIRAM memory only\n- Either internal or external memory based on default malloc()\n  behavior in ESP-IDF\n- Internal IRAM memory wherever applicable else internal DRAM\n\nRecommended mode here is always internal, since that is most preferred\nfrom security perspective. But if application requirement does not allow\nsufficient free internal memory then alternate mode can be selected.",
                         "id": "component-config-esp-ble-mesh-support-memory-allocation-strategy",
                         "name": "BLE_MESH_MEM_ALLOC_MODE",
                         "title": "Memory allocation strategy",
@@ -7755,18 +7736,7 @@
                         "type": "bool"
                     },
                     {
-                        "children": [
-                            {
-                                "children": [],
-                                "depends_on": "BLE_MESH_NODE && BLE_MESH_PB_ADV && BLE_MESH",
-                                "help": "This option specifies the interval of sending two consecutive unprovisioned\ndevice beacon, users can use this option to change the frequency of sending\nunprovisioned device beacon. For example, if the value is 5, it means the\nunprovisioned device beacon will send every 5 seconds. When the option of\nBLE_MESH_FAST_PROV is selected, the value is better to be 3 seconds, or less.",
-                                "id": "BLE_MESH_UNPROVISIONED_BEACON_INTERVAL",
-                                "name": "BLE_MESH_UNPROVISIONED_BEACON_INTERVAL",
-                                "range": null,
-                                "title": "Interval between two consecutive Unprovisioned Device Beacon",
-                                "type": "int"
-                            }
-                        ],
+                        "children": [],
                         "depends_on": "BLE_MESH",
                         "help": "Enable this option to allow the device to be provisioned over the\nadvertising bearer. This option should be enabled if PB-ADV is\ngoing to be used during provisioning procedure.",
                         "id": "BLE_MESH_PB_ADV",
@@ -9828,7 +9798,7 @@
                                     },
                                     {
                                         "children": [],
-                                        "depends_on": "SPIRAM && IDF_TARGET_ESP32 && ESP32_SPIRAM_SUPPORT",
+                                        "depends_on": "SPIRAM && ESP32_SPIRAM_SUPPORT",
                                         "help": "If enabled, variables with EXT_RAM_ATTR attribute will be placed in SPIRAM instead of internal DRAM.\nBSS section of `lwip`, `net80211`, `pp`, `bt` libraries will be automatically placed\nin SPIRAM. BSS sections from other object files and libraries can also be placed in SPIRAM through\nlinker fragment scheme `extram_bss`.\n\nNote that the variables placed in SPIRAM using EXT_RAM_ATTR will be zero initialized.",
                                         "id": "SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY",
                                         "name": "SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY",
@@ -10589,21 +10559,11 @@
                     {
                         "children": [],
                         "depends_on": null,
-                        "help": "Bootloaders before ESP-IDF v2.1 did less initialisation of the\nsystem clock. This setting needs to be enabled to build an app\nwhich can be booted by these older bootloaders.\n\nIf this setting is enabled, the app can be booted by any bootloader\nfrom IDF v1.0 up to the current version.\n\nIf this setting is disabled, the app can only be booted by bootloaders\nfrom IDF v2.1 or newer.\n\nEnabling this setting adds approximately 1KB to the app's IRAM usage.",
+                        "help": "Bootloaders before IDF v2.1 did less initialisation of the\nsystem clock. This setting needs to be enabled to build an app\nwhich can be booted by these older bootloaders.\n\nIf this setting is enabled, the app can be booted by any bootloader\nfrom IDF v1.0 up to the current version.\n\nIf this setting is disabled, the app can only be booted by bootloaders\nfrom IDF v2.1 or newer.\n\nEnabling this setting adds approximately 1KB to the app's IRAM usage.",
                         "id": "ESP32_COMPATIBLE_PRE_V2_1_BOOTLOADERS",
                         "name": "ESP32_COMPATIBLE_PRE_V2_1_BOOTLOADERS",
                         "range": null,
-                        "title": "App compatible with bootloaders before ESP-IDF v2.1",
-                        "type": "bool"
-                    },
-                    {
-                        "children": [],
-                        "depends_on": null,
-                        "help": "Partition tables before ESP-IDF V3.1 do not contain an MD5 checksum\nfield, and the bootloader before ESP-IDF v3.1 cannot read a partition\ntable that contains an MD5 checksum field.\n\nEnable this option only if your app needs to boot on a bootloader and/or\npartition table that was generated from a version *before* ESP-IDF v3.1.\n\nIf this option and Flash Encryption are enabled at the same time, and any\ndata partitions in the partition table are marked Encrypted, then the\npartition encrypted flag should be manually verified in the app before accessing\nthe partition (see CVE-2021-27926).",
-                        "id": "ESP32_COMPATIBLE_PRE_V3_1_BOOTLOADERS",
-                        "name": "ESP32_COMPATIBLE_PRE_V3_1_BOOTLOADERS",
-                        "range": null,
-                        "title": "App compatible with bootloader and partition table before ESP-IDF v3.1",
+                        "title": "App compatible with bootloaders before IDF v2.1",
                         "type": "bool"
                     },
                     {
@@ -12225,72 +12185,154 @@
                     {
                         "children": [
                             {
-                                "children": [],
-                                "depends_on": "<choice ESP32_WIFI_LOG_DEFAULT_LEVEL>",
-                                "help": null,
-                                "id": "WIFI_LOG_DEFAULT_LEVEL_NONE",
-                                "name": "WIFI_LOG_DEFAULT_LEVEL_NONE",
-                                "range": null,
-                                "title": "No output",
-                                "type": "bool"
+                                "children": [
+                                    {
+                                        "children": [],
+                                        "depends_on": "<choice ESP32_WIFI_DEBUG_LOG_LEVEL>",
+                                        "help": null,
+                                        "id": "ESP32_WIFI_DEBUG_LOG_DEBUG",
+                                        "name": "ESP32_WIFI_DEBUG_LOG_DEBUG",
+                                        "range": null,
+                                        "title": "WiFi Debug Log Debug",
+                                        "type": "bool"
+                                    },
+                                    {
+                                        "children": [],
+                                        "depends_on": "<choice ESP32_WIFI_DEBUG_LOG_LEVEL>",
+                                        "help": null,
+                                        "id": "ESP32_WIFI_DEBUG_LOG_VERBOSE",
+                                        "name": "ESP32_WIFI_DEBUG_LOG_VERBOSE",
+                                        "range": null,
+                                        "title": "WiFi Debug Log Verbose",
+                                        "type": "bool"
+                                    }
+                                ],
+                                "depends_on": "ESP32_WIFI_DEBUG_LOG_ENABLE",
+                                "help": "The WiFi log is divided into the following levels: ERROR,WARNING,INFO,DEBUG,VERBOSE.\nThe ERROR,WARNING,INFO levels are enabled by default, and the DEBUG,VERBOSE levels can be enabled here.",
+                                "id": "component-config-wi-fi-enable-wifi-debug-log-wifi-debug-log-level",
+                                "name": "ESP32_WIFI_DEBUG_LOG_LEVEL",
+                                "title": "WiFi debug log level",
+                                "type": "choice"
                             },
                             {
-                                "children": [],
-                                "depends_on": "<choice ESP32_WIFI_LOG_DEFAULT_LEVEL>",
-                                "help": null,
-                                "id": "WIFI_LOG_DEFAULT_LEVEL_ERROR",
-                                "name": "WIFI_LOG_DEFAULT_LEVEL_ERROR",
-                                "range": null,
-                                "title": "Error",
-                                "type": "bool"
+                                "children": [
+                                    {
+                                        "children": [],
+                                        "depends_on": "<choice ESP32_WIFI_DEBUG_LOG_MODULE>",
+                                        "help": null,
+                                        "id": "ESP32_WIFI_DEBUG_LOG_MODULE_ALL",
+                                        "name": "ESP32_WIFI_DEBUG_LOG_MODULE_ALL",
+                                        "range": null,
+                                        "title": "WiFi Debug Log Module All",
+                                        "type": "bool"
+                                    },
+                                    {
+                                        "children": [],
+                                        "depends_on": "<choice ESP32_WIFI_DEBUG_LOG_MODULE>",
+                                        "help": null,
+                                        "id": "ESP32_WIFI_DEBUG_LOG_MODULE_WIFI",
+                                        "name": "ESP32_WIFI_DEBUG_LOG_MODULE_WIFI",
+                                        "range": null,
+                                        "title": "WiFi Debug Log Module WiFi",
+                                        "type": "bool"
+                                    },
+                                    {
+                                        "children": [],
+                                        "depends_on": "<choice ESP32_WIFI_DEBUG_LOG_MODULE>",
+                                        "help": null,
+                                        "id": "ESP32_WIFI_DEBUG_LOG_MODULE_COEX",
+                                        "name": "ESP32_WIFI_DEBUG_LOG_MODULE_COEX",
+                                        "range": null,
+                                        "title": "WiFi Debug Log Module Coex",
+                                        "type": "bool"
+                                    },
+                                    {
+                                        "children": [],
+                                        "depends_on": "<choice ESP32_WIFI_DEBUG_LOG_MODULE>",
+                                        "help": null,
+                                        "id": "ESP32_WIFI_DEBUG_LOG_MODULE_MESH",
+                                        "name": "ESP32_WIFI_DEBUG_LOG_MODULE_MESH",
+                                        "range": null,
+                                        "title": "WiFi Debug Log Module Mesh",
+                                        "type": "bool"
+                                    }
+                                ],
+                                "depends_on": "ESP32_WIFI_DEBUG_LOG_ENABLE",
+                                "help": "The WiFi log module contains three parts: WIFI,COEX,MESH. The WIFI module indicates the logs related to\nWiFi, the COEX module indicates the logs related to WiFi and BT(or BLE) coexist, the MESH module indicates\nthe logs related to Mesh. When ESP32_WIFI_LOG_MODULE_ALL is enabled, all modules are selected.",
+                                "id": "component-config-wi-fi-enable-wifi-debug-log-wifi-debug-log-module",
+                                "name": "ESP32_WIFI_DEBUG_LOG_MODULE",
+                                "title": "WiFi debug log module",
+                                "type": "choice"
                             },
                             {
-                                "children": [],
-                                "depends_on": "<choice ESP32_WIFI_LOG_DEFAULT_LEVEL>",
-                                "help": null,
-                                "id": "WIFI_LOG_DEFAULT_LEVEL_WARN",
-                                "name": "WIFI_LOG_DEFAULT_LEVEL_WARN",
+                                "children": [
+                                    {
+                                        "children": [],
+                                        "depends_on": "ESP32_WIFI_DEBUG_LOG_SUBMODULE",
+                                        "help": "When this option is enabled, all debug submodules are selected.",
+                                        "id": "ESP32_WIFI_DEBUG_LOG_SUBMODULE_ALL",
+                                        "name": "ESP32_WIFI_DEBUG_LOG_SUBMODULE_ALL",
+                                        "range": null,
+                                        "title": "WiFi Debug Log Submodule All",
+                                        "type": "bool"
+                                    },
+                                    {
+                                        "children": [],
+                                        "depends_on": "ESP32_WIFI_DEBUG_LOG_SUBMODULE && !ESP32_WIFI_DEBUG_LOG_SUBMODULE_ALL",
+                                        "help": null,
+                                        "id": "ESP32_WIFI_DEBUG_LOG_SUBMODULE_INIT",
+                                        "name": "ESP32_WIFI_DEBUG_LOG_SUBMODULE_INIT",
+                                        "range": null,
+                                        "title": "WiFi Debug Log Submodule Init",
+                                        "type": "bool"
+                                    },
+                                    {
+                                        "children": [],
+                                        "depends_on": "ESP32_WIFI_DEBUG_LOG_SUBMODULE && !ESP32_WIFI_DEBUG_LOG_SUBMODULE_ALL",
+                                        "help": null,
+                                        "id": "ESP32_WIFI_DEBUG_LOG_SUBMODULE_IOCTL",
+                                        "name": "ESP32_WIFI_DEBUG_LOG_SUBMODULE_IOCTL",
+                                        "range": null,
+                                        "title": "WiFi Debug Log Submodule Ioctl",
+                                        "type": "bool"
+                                    },
+                                    {
+                                        "children": [],
+                                        "depends_on": "ESP32_WIFI_DEBUG_LOG_SUBMODULE && !ESP32_WIFI_DEBUG_LOG_SUBMODULE_ALL",
+                                        "help": null,
+                                        "id": "ESP32_WIFI_DEBUG_LOG_SUBMODULE_CONN",
+                                        "name": "ESP32_WIFI_DEBUG_LOG_SUBMODULE_CONN",
+                                        "range": null,
+                                        "title": "WiFi Debug Log Submodule Conn",
+                                        "type": "bool"
+                                    },
+                                    {
+                                        "children": [],
+                                        "depends_on": "ESP32_WIFI_DEBUG_LOG_SUBMODULE && !ESP32_WIFI_DEBUG_LOG_SUBMODULE_ALL",
+                                        "help": null,
+                                        "id": "ESP32_WIFI_DEBUG_LOG_SUBMODULE_SCAN",
+                                        "name": "ESP32_WIFI_DEBUG_LOG_SUBMODULE_SCAN",
+                                        "range": null,
+                                        "title": "WiFi Debug Log Submodule Scan",
+                                        "type": "bool"
+                                    }
+                                ],
+                                "depends_on": "ESP32_WIFI_DEBUG_LOG_ENABLE",
+                                "help": "Enable this option to set the WiFi debug log submodule.\nCurrently the log submodule contains the following parts: INIT,IOCTL,CONN,SCAN.\nThe INIT submodule indicates the initialization process.The IOCTL submodule indicates the API calling\nprocess.\nThe CONN submodule indicates the connecting process.The SCAN submodule indicates the scaning process.",
+                                "id": "ESP32_WIFI_DEBUG_LOG_SUBMODULE",
+                                "name": "ESP32_WIFI_DEBUG_LOG_SUBMODULE",
                                 "range": null,
-                                "title": "Warning",
-                                "type": "bool"
-                            },
-                            {
-                                "children": [],
-                                "depends_on": "<choice ESP32_WIFI_LOG_DEFAULT_LEVEL>",
-                                "help": null,
-                                "id": "WIFI_LOG_DEFAULT_LEVEL_INFO",
-                                "name": "WIFI_LOG_DEFAULT_LEVEL_INFO",
-                                "range": null,
-                                "title": "Info",
-                                "type": "bool"
-                            },
-                            {
-                                "children": [],
-                                "depends_on": "<choice ESP32_WIFI_LOG_DEFAULT_LEVEL>",
-                                "help": null,
-                                "id": "WIFI_LOG_DEFAULT_LEVEL_DEBUG",
-                                "name": "WIFI_LOG_DEFAULT_LEVEL_DEBUG",
-                                "range": null,
-                                "title": "Debug",
-                                "type": "bool"
-                            },
-                            {
-                                "children": [],
-                                "depends_on": "<choice ESP32_WIFI_LOG_DEFAULT_LEVEL>",
-                                "help": null,
-                                "id": "WIFI_LOG_DEFAULT_LEVEL_VERBOSE",
-                                "name": "WIFI_LOG_DEFAULT_LEVEL_VERBOSE",
-                                "range": null,
-                                "title": "Verbose",
+                                "title": "WiFi debug log submodule",
                                 "type": "bool"
                             }
                         ],
                         "depends_on": null,
-                        "help": "Specify how much output to see in logs by default.\nYou can set lower verbosity level at runtime using\nesp_log_level_set function.\n\nNote that this setting limits which log statements\nare compiled into the program. So setting this to, say,\n\"Warning\" would mean that changing log level to \"Debug\"\nat runtime will not be possible.",
-                        "id": "component-config-wi-fi-wifi-default-log-level",
-                        "name": "ESP32_WIFI_LOG_DEFAULT_LEVEL",
-                        "title": "WiFi default log level",
-                        "type": "choice"
+                        "help": "Select this option to enable WiFi debug log",
+                        "id": "ESP32_WIFI_DEBUG_LOG_ENABLE",
+                        "name": "ESP32_WIFI_DEBUG_LOG_ENABLE",
+                        "range": null,
+                        "title": "Enable WiFi debug log",
+                        "type": "bool"
                     },
                     {
                         "children": [],
@@ -12314,7 +12356,7 @@
                     },
                     {
                         "children": [],
-                        "depends_on": "WPA_MBEDTLS_CRYPTO",
+                        "depends_on": null,
                         "help": "Select this option to allow the device to establish a WPA3-Personal connection with eligible AP's.\nPMF (Protected Management Frames) is a prerequisite feature for a WPA3 connection, it needs to be\nexplicitly configured before attempting connection. Please refer to the Wi-Fi Driver API Guide for details.",
                         "id": "ESP32_WIFI_ENABLE_WPA3_SAE",
                         "name": "ESP32_WIFI_ENABLE_WPA3_SAE",
@@ -12404,7 +12446,7 @@
                 "children": [
                     {
                         "children": [],
-                        "depends_on": null,
+                        "depends_on": "IDF_TARGET_ESP32",
                         "help": "If this option is enabled, NVS will be initialized and calibration data will be loaded from there.\nPHY calibration will be skipped on deep sleep wakeup. If calibration data is not found, full calibration\nwill be performed and stored in NVS. Normally, only partial calibration will be performed.\nIf this option is disabled, full calibration will be performed.\n\nIf it's easy that your board calibrate bad data, choose 'n'.\nTwo cases for example, you should choose 'n':\n1.If your board is easy to be booted up with antenna disconnected.\n2.Because of your board design, each time when you do calibration, the result are too unstable.\nIf unsure, choose 'y'.",
                         "id": "ESP32_PHY_CALIBRATION_AND_DATA_STORAGE",
                         "name": "ESP32_PHY_CALIBRATION_AND_DATA_STORAGE",
@@ -12585,16 +12627,6 @@
                         "name": "ESP_COREDUMP_CHECKSUM",
                         "title": "Core dump data integrity check",
                         "type": "choice"
-                    },
-                    {
-                        "children": [],
-                        "depends_on": "ESP_COREDUMP_ENABLE_TO_FLASH",
-                        "help": "When enabled, if any data are found on the flash core dump partition,\nthey will be checked by calculating their checksum.",
-                        "id": "ESP_COREDUMP_CHECK_BOOT",
-                        "name": "ESP_COREDUMP_CHECK_BOOT",
-                        "range": null,
-                        "title": "Check core dump data integrity on boot",
-                        "type": "bool"
                     },
                     {
                         "children": [],
@@ -14423,16 +14455,6 @@
                     {
                         "children": [],
                         "depends_on": null,
-                        "help": "This option could be used to disable DHCP client identification with its MAC address.\n(Client id is used by DHCP servers to uniquely identify clients and are included\nin the DHCP packets as an option 61)\nSet this option to \"y\" in order to exclude option 61 from DHCP packets.",
-                        "id": "LWIP_DHCP_DISABLE_CLIENT_ID",
-                        "name": "LWIP_DHCP_DISABLE_CLIENT_ID",
-                        "range": null,
-                        "title": "DHCP: Disable Use of HW address as client identification",
-                        "type": "bool"
-                    },
-                    {
-                        "children": [],
-                        "depends_on": null,
                         "help": "When this option is enabled, DHCP client tries to re-obtain last valid IP address obtained from DHCP\nserver. Last valid DHCP configuration is stored in nvs and restored after reset/power-up. If IP is still\navailable, there is no need for sending discovery message to DHCP server and save some time.",
                         "id": "LWIP_DHCP_RESTORE_LAST_IP",
                         "name": "LWIP_DHCP_RESTORE_LAST_IP",
@@ -14443,41 +14465,30 @@
                     {
                         "children": [
                             {
-                                "children": [
-                                    {
-                                        "children": [],
-                                        "depends_on": "LWIP_DHCPS",
-                                        "help": "The DHCP server is calculating lease time multiplying the sent\nand received times by this number of seconds per unit.\nThe default is 60, that equals one minute.",
-                                        "id": "LWIP_DHCPS_LEASE_UNIT",
-                                        "name": "LWIP_DHCPS_LEASE_UNIT",
-                                        "range": [
-                                            1,
-                                            3600
-                                        ],
-                                        "title": "Multiplier for lease time, in seconds",
-                                        "type": "int"
-                                    },
-                                    {
-                                        "children": [],
-                                        "depends_on": "LWIP_DHCPS",
-                                        "help": "The maximum number of DHCP clients that are connected to the server.\nAfter this number is exceeded, DHCP server removes of the oldest device\nfrom it's address pool, without notification.",
-                                        "id": "LWIP_DHCPS_MAX_STATION_NUM",
-                                        "name": "LWIP_DHCPS_MAX_STATION_NUM",
-                                        "range": [
-                                            1,
-                                            64
-                                        ],
-                                        "title": "Maximum number of stations",
-                                        "type": "int"
-                                    }
-                                ],
+                                "children": [],
                                 "depends_on": null,
-                                "help": "Enabling this option allows the device to run the DHCP server\n(to dynamically assign IPv4 addresses to clients).",
-                                "id": "LWIP_DHCPS",
-                                "name": "LWIP_DHCPS",
-                                "range": null,
-                                "title": "DHCPS: Enable IPv4 Dynamic Host Configuration Protocol Server (DHCPS)",
-                                "type": "bool"
+                                "help": "The DHCP server is calculating lease time multiplying the sent\nand received times by this number of seconds per unit.\nThe default is 60, that equals one minute.",
+                                "id": "LWIP_DHCPS_LEASE_UNIT",
+                                "name": "LWIP_DHCPS_LEASE_UNIT",
+                                "range": [
+                                    1,
+                                    3600
+                                ],
+                                "title": "Multiplier for lease time, in seconds",
+                                "type": "int"
+                            },
+                            {
+                                "children": [],
+                                "depends_on": null,
+                                "help": "The maximum number of DHCP clients that are connected to the server.\nAfter this number is exceeded, DHCP server removes of the oldest device\nfrom it's address pool, without notification.",
+                                "id": "LWIP_DHCPS_MAX_STATION_NUM",
+                                "name": "LWIP_DHCPS_MAX_STATION_NUM",
+                                "range": [
+                                    1,
+                                    64
+                                ],
+                                "title": "Maximum number of stations",
+                                "type": "int"
                             }
                         ],
                         "depends_on": null,
@@ -15086,16 +15097,6 @@
                             {
                                 "children": [],
                                 "depends_on": null,
-                                "help": "Enable ICMP module for check network stability",
-                                "id": "LWIP_ICMP",
-                                "name": "LWIP_ICMP",
-                                "range": null,
-                                "title": "ICMP: Enable ICMP",
-                                "type": "bool"
-                            },
-                            {
-                                "children": [],
-                                "depends_on": "LWIP_ICMP6 || LWIP_ICMP",
                                 "help": null,
                                 "id": "LWIP_MULTICAST_PING",
                                 "name": "LWIP_MULTICAST_PING",
@@ -15105,7 +15106,7 @@
                             },
                             {
                                 "children": [],
-                                "depends_on": "LWIP_ICMP",
+                                "depends_on": null,
                                 "help": null,
                                 "id": "LWIP_BROADCAST_PING",
                                 "name": "LWIP_BROADCAST_PING",
@@ -15376,7 +15377,7 @@
                             },
                             {
                                 "children": [],
-                                "depends_on": "LWIP_DEBUG && LWIP_ICMP",
+                                "depends_on": "LWIP_DEBUG",
                                 "help": null,
                                 "id": "LWIP_ICMP_DEBUG",
                                 "name": "LWIP_ICMP_DEBUG",
@@ -15466,7 +15467,7 @@
                             },
                             {
                                 "children": [],
-                                "depends_on": "(SPIRAM_USE_CAPS_ALLOC || SPIRAM_USE_MALLOC) && <choice MBEDTLS_MEM_ALLOC_MODE>",
+                                "depends_on": "ESP32_SPIRAM_SUPPORT && <choice MBEDTLS_MEM_ALLOC_MODE>",
                                 "help": null,
                                 "id": "MBEDTLS_EXTERNAL_MEM_ALLOC",
                                 "name": "MBEDTLS_EXTERNAL_MEM_ALLOC",
@@ -15506,7 +15507,7 @@
                             }
                         ],
                         "depends_on": null,
-                        "help": "Allocation strategy for mbedTLS, essentially provides ability to\nallocate all required dynamic allocations from,\n\n- Internal DRAM memory only\n- External SPIRAM memory only\n- Either internal or external memory based on default malloc()\n  behavior in ESP-IDF\n- Custom allocation mode, by overwriting calloc()/free() using\n  mbedtls_platform_set_calloc_free() function\n- Internal IRAM memory wherever applicable else internal DRAM\n\nRecommended mode here is always internal (*), since that is most preferred\nfrom security perspective. But if application requirement does not\nallow sufficient free internal memory then alternate mode can be\nselected.\n\n(*) In case of ESP32-S2/ESP32-S3, hardware allows encryption of external\nSPIRAM contents provided hardware flash encryption feature is enabled.\nIn that case, using external SPIRAM allocation strategy is also safe choice\nfrom security perspective.",
+                        "help": "Allocation strategy for mbedTLS, essentially provides ability to\nallocate all required dynamic allocations from,\n\n- Internal DRAM memory only\n- External SPIRAM memory only\n- Either internal or external memory based on default malloc()\n  behavior in ESP-IDF\n- Custom allocation mode, by overwriting calloc()/free() using\n  mbedtls_platform_set_calloc_free() function\n- Internal IRAM memory wherever applicable else internal DRAM\n\nRecommended mode here is always internal, since that is most preferred\nfrom security perspective. But if application requirement does not\nallow sufficient free internal memory then alternate mode can be\nselected.",
                         "id": "component-config-mbedtls-memory-allocation-strategy",
                         "name": "MBEDTLS_MEM_ALLOC_MODE",
                         "title": "Memory allocation strategy",
@@ -16197,26 +16198,6 @@
                     {
                         "children": [],
                         "depends_on": "MBEDTLS_TLS_ENABLED",
-                        "help": "Disabling this avoids problems with mis-issued and/or misused (intermediate) CA and leaf certificates.\nDepending on your PKI use, disabling this can be a security risk.",
-                        "id": "MBEDTLS_X509_CHECK_KEY_USAGE",
-                        "name": "MBEDTLS_X509_CHECK_KEY_USAGE",
-                        "range": null,
-                        "title": "Enable verification of the keyUsage extension",
-                        "type": "bool"
-                    },
-                    {
-                        "children": [],
-                        "depends_on": "MBEDTLS_TLS_ENABLED",
-                        "help": "Disabling this avoids problems with mis-issued and/or misused certificates.\nDepending on your PKI use, disabling this can be a security risk.",
-                        "id": "MBEDTLS_X509_CHECK_EXTENDED_KEY_USAGE",
-                        "name": "MBEDTLS_X509_CHECK_EXTENDED_KEY_USAGE",
-                        "range": null,
-                        "title": "Enable verification of the extendedKeyUsage extension",
-                        "type": "bool"
-                    },
-                    {
-                        "children": [],
-                        "depends_on": "MBEDTLS_TLS_ENABLED",
                         "help": "Server support for RFC 5077 session tickets. See mbedTLS documentation for more details.\nDisabling this option will save some code size.",
                         "id": "MBEDTLS_SERVER_SSL_SESSION_TICKETS",
                         "name": "MBEDTLS_SERVER_SSL_SESSION_TICKETS",
@@ -16334,16 +16315,6 @@
                                 "name": "MBEDTLS_GCM_C",
                                 "range": null,
                                 "title": "GCM (Galois/Counter) block cipher modes",
-                                "type": "bool"
-                            },
-                            {
-                                "children": [],
-                                "depends_on": "MBEDTLS_AES_C",
-                                "help": "Enable NIST key wrapping and key wrapping padding.",
-                                "id": "MBEDTLS_NIST_KW_C",
-                                "name": "MBEDTLS_NIST_KW_C",
-                                "range": null,
-                                "title": "NIST key wrapping (KW) and KW padding (KWP)",
                                 "type": "bool"
                             }
                         ],
@@ -16858,7 +16829,7 @@
                                 "type": "bool"
                             }
                         ],
-                        "depends_on": "WS_TRANSPORT",
+                        "depends_on": null,
                         "help": "Enable MQTT transport over Websocket.",
                         "id": "MQTT_TRANSPORT_WEBSOCKET",
                         "name": "MQTT_TRANSPORT_WEBSOCKET",
@@ -17911,33 +17882,14 @@
             {
                 "children": [
                     {
-                        "children": [
-                            {
-                                "children": [
-                                    {
-                                        "children": [],
-                                        "depends_on": "WS_TRANSPORT",
-                                        "help": "Size of the buffer used for constructing the HTTP Upgrade request during connect",
-                                        "id": "WS_BUFFER_SIZE",
-                                        "name": "WS_BUFFER_SIZE",
-                                        "range": null,
-                                        "title": "Websocket transport buffer size",
-                                        "type": "int"
-                                    }
-                                ],
-                                "depends_on": null,
-                                "help": "Enable support for creating websocket transport.",
-                                "id": "WS_TRANSPORT",
-                                "name": "WS_TRANSPORT",
-                                "range": null,
-                                "title": "Enable Websocket Transport",
-                                "type": "bool"
-                            }
-                        ],
+                        "children": [],
                         "depends_on": null,
-                        "id": "component-config-tcp-transport-websocket",
-                        "title": "Websocket",
-                        "type": "menu"
+                        "help": "Size of the buffer used for constructing the HTTP Upgrade request during connect",
+                        "id": "WS_BUFFER_SIZE",
+                        "name": "WS_BUFFER_SIZE",
+                        "range": null,
+                        "title": "Websocket transport buffer size",
+                        "type": "int"
                     }
                 ],
                 "depends_on": null,
@@ -18455,11 +18407,11 @@
                     {
                         "children": [],
                         "depends_on": null,
-                        "help": "Select this option to use MbedTLS crypto APIs which utilize hardware acceleration.",
+                        "help": "Select this option to use MbedTLS crypto API's which utilize hardware acceleration.",
                         "id": "WPA_MBEDTLS_CRYPTO",
                         "name": "WPA_MBEDTLS_CRYPTO",
                         "range": null,
-                        "title": "Use MbedTLS crypto APIs",
+                        "title": "Use MbedTLS crypto API's",
                         "type": "bool"
                     },
                     {
@@ -18495,11 +18447,11 @@
                     {
                         "children": [],
                         "depends_on": null,
-                        "help": "Select this option to enable validate each WPS attribute\nrigorously. Disabling this add the workaorunds with various APs.\nEnabling this may cause inter operability issues with some APs.",
-                        "id": "WPA_WPS_STRICT",
-                        "name": "WPA_WPS_STRICT",
+                        "help": "Select this option to enable WPS related IOT fixes with\ndifferent APs. This option fixes IOT related issues with\nAPs which do not follow some of the standards of WPS-2.0\nspecification. These do not include any of the security\nrelated bypassing, just simple configuration corrections.\n\nCurrent fixes under this flag.\n1. Allow NULL-padded WPS attributes: Some APs keep NULL-padding\nat the end of some variable length WPS Attributes.\nThis is not as par the WPS2.0 specs, but to avoid interop issues,\nignore the padding by reducing the attribute length by 1.\n2. Bypass WPS-Config method validation: Some APs set display/pbc\nbutton bit without setting virtual/phycial display/button bit which\nwill cause M2 validation fail, bypassing WPS-Config method validation.",
+                        "id": "WPA_WPS_WARS",
+                        "name": "WPA_WPS_WARS",
                         "range": null,
-                        "title": "Strictly validate all WPS attributes",
+                        "title": "Add WPS Inter operatability Fixes",
                         "type": "bool"
                     },
                     {

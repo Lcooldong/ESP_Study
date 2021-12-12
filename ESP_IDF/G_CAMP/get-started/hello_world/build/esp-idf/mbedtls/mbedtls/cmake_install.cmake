@@ -1,4 +1,4 @@
-# Install script for directory: C:/esp-idf/components/mbedtls/mbedtls
+# Install script for directory: D:/ProGram/ESP_IDF/components/mbedtls/mbedtls
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -34,8 +34,8 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("D:/Github/ESP/ESP_IDF/G_CAMP/get-started/hello_world/build/esp-idf/mbedtls/mbedtls/library/cmake_install.cmake")
-  include("D:/Github/ESP/ESP_IDF/G_CAMP/get-started/hello_world/build/esp-idf/mbedtls/mbedtls/include/cmake_install.cmake")
+  include("D:/ESP/ESP_IDF/G_CAMP/get-started/hello_world/build/esp-idf/mbedtls/mbedtls/library/cmake_install.cmake")
+  include("D:/ESP/ESP_IDF/G_CAMP/get-started/hello_world/build/esp-idf/mbedtls/mbedtls/include/cmake_install.cmake")
 
 endif()
 

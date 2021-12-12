@@ -193,7 +193,7 @@
                     }
                 ],
                 "depends_on": null,
-                "help": "Select the way the application is built.\n\nBy default, the application is built as a binary file in a format compatible with\nthe ESP-IDF bootloader. In addition to this application, 2nd stage bootloader is\nalso built. Application and bootloader binaries can be written into flash and\nloaded/executed from there.\n\nAnother option, useful for only very small and limited applications, is to only link\nthe .elf file of the application, such that it can be loaded directly into RAM over\nJTAG. Note that since IRAM and DRAM sizes are very limited, it is not possible to\nbuild any complex application this way. However for kinds of testing and debugging,\nthis option may provide faster iterations, since the application does not need to be\nwritten into flash.\nNote that at the moment, ESP-IDF does not contain all the startup code required to\ninitialize the CPUs and ROM memory (data/bss). Therefore it is necessary to execute\na bit of ROM code prior to executing the application. A gdbinit file may look as follows (for ESP32):\n\n    # Connect to a running instance of OpenOCD\n    target remote :3333\n    # Reset and halt the target\n    mon reset halt\n    # Run to a specific point in ROM code,\n    #  where most of initialization is complete.\n    thb *0x40007d54\n    c\n    # Load the application into RAM\n    load\n    # Run till app_main\n    tb app_main\n    c\n\nExecute this gdbinit file as follows:\n\n    xtensa-esp32-elf-gdb build/app-name.elf -x gdbinit\n\nExample gdbinit files for other targets can be found in tools/test_apps/system/gdb_loadable_elf/\n\nRecommended sdkconfig.defaults for building loadable ELF files is as follows.\nCONFIG_APP_BUILD_TYPE_ELF_RAM is required, other options help reduce application\nmemory footprint.\n\n    CONFIG_APP_BUILD_TYPE_ELF_RAM=y\n    CONFIG_VFS_SUPPORT_TERMIOS=\n    CONFIG_NEWLIB_NANO_FORMAT=y\n    CONFIG_ESP_SYSTEM_PANIC_PRINT_HALT=y\n    CONFIG_ESP_DEBUG_STUBS_ENABLE=\n    CONFIG_ESP_ERR_TO_NAME_LOOKUP=",
+                "help": "Select the way the application is built.\n\nBy default, the application is built as a binary file in a format compatible with\nthe ESP-IDF bootloader. In addition to this application, 2nd stage bootloader is\nalso built. Application and bootloader binaries can be written into flash and\nloaded/executed from there.\n\nAnother option, useful for only very small and limited applications, is to only link\nthe .elf file of the application, such that it can be loaded directly into RAM over\nJTAG. Note that since IRAM and DRAM sizes are very limited, it is not possible to\nbuild any complex application this way. However for kinds of testing and debugging,\nthis option may provide faster iterations, since the application does not need to be\nwritten into flash.\nNote that at the moment, ESP-IDF does not contain all the startup code required to\ninitialize the CPUs and ROM memory (data/bss). Therefore it is necessary to execute\na bit of ROM code prior to executing the application. A gdbinit file may look as follows (for ESP32):\n\n    # Connect to a running instance of OpenOCD\n    target remote :3333\n    # Reset and halt the target\n    mon reset halt\n    # Run to a specific point in ROM code,\n    #  where most of initialization is complete.\n    thb *0x40007901\n    c\n    # Load the application into RAM\n    load\n    # Run till app_main\n    tb app_main\n    c\n\nExecute this gdbinit file as follows:\n\n    xtensa-esp32-elf-gdb build/app-name.elf -x gdbinit\n\nExample gdbinit files for other targets can be found in tools/test_apps/system/gdb_loadable_elf/\n\nRecommended sdkconfig.defaults for building loadable ELF files is as follows.\nCONFIG_APP_BUILD_TYPE_ELF_RAM is required, other options help reduce application\nmemory footprint.\n\n    CONFIG_APP_BUILD_TYPE_ELF_RAM=y\n    CONFIG_VFS_SUPPORT_TERMIOS=\n    CONFIG_NEWLIB_NANO_FORMAT=y\n    CONFIG_ESP_SYSTEM_PANIC_PRINT_HALT=y\n    CONFIG_ESP_DEBUG_STUBS_ENABLE=\n    CONFIG_ESP_ERR_TO_NAME_LOOKUP=",
                 "id": "build-type-application-build-type",
                 "name": "APP_BUILD_TYPE",
                 "title": "Application build type",
@@ -1713,7 +1713,7 @@
             },
             {
                 "children": [],
-                "depends_on": "!ESP32_COMPATIBLE_PRE_V3_1_BOOTLOADERS",
+                "depends_on": null,
                 "help": "Generate an MD5 checksum for the partition table for protecting the\nintegrity of the table. The generation should be turned off for legacy\nbootloaders which cannot recognize the MD5 checksum in the partition\ntable.",
                 "id": "PARTITION_TABLE_MD5",
                 "name": "PARTITION_TABLE_MD5",
@@ -2377,7 +2377,7 @@
                                     },
                                     {
                                         "children": [],
-                                        "depends_on": "SPIRAM && IDF_TARGET_ESP32 && ESP32_SPIRAM_SUPPORT",
+                                        "depends_on": "SPIRAM && ESP32_SPIRAM_SUPPORT",
                                         "help": "If enabled, variables with EXT_RAM_ATTR attribute will be placed in SPIRAM instead of internal DRAM.\nBSS section of `lwip`, `net80211`, `pp`, `bt` libraries will be automatically placed\nin SPIRAM. BSS sections from other object files and libraries can also be placed in SPIRAM through\nlinker fragment scheme `extram_bss`.\n\nNote that the variables placed in SPIRAM using EXT_RAM_ATTR will be zero initialized.",
                                         "id": "SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY",
                                         "name": "SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY",
@@ -3138,21 +3138,11 @@
                     {
                         "children": [],
                         "depends_on": null,
-                        "help": "Bootloaders before ESP-IDF v2.1 did less initialisation of the\nsystem clock. This setting needs to be enabled to build an app\nwhich can be booted by these older bootloaders.\n\nIf this setting is enabled, the app can be booted by any bootloader\nfrom IDF v1.0 up to the current version.\n\nIf this setting is disabled, the app can only be booted by bootloaders\nfrom IDF v2.1 or newer.\n\nEnabling this setting adds approximately 1KB to the app's IRAM usage.",
+                        "help": "Bootloaders before IDF v2.1 did less initialisation of the\nsystem clock. This setting needs to be enabled to build an app\nwhich can be booted by these older bootloaders.\n\nIf this setting is enabled, the app can be booted by any bootloader\nfrom IDF v1.0 up to the current version.\n\nIf this setting is disabled, the app can only be booted by bootloaders\nfrom IDF v2.1 or newer.\n\nEnabling this setting adds approximately 1KB to the app's IRAM usage.",
                         "id": "ESP32_COMPATIBLE_PRE_V2_1_BOOTLOADERS",
                         "name": "ESP32_COMPATIBLE_PRE_V2_1_BOOTLOADERS",
                         "range": null,
-                        "title": "App compatible with bootloaders before ESP-IDF v2.1",
-                        "type": "bool"
-                    },
-                    {
-                        "children": [],
-                        "depends_on": null,
-                        "help": "Partition tables before ESP-IDF V3.1 do not contain an MD5 checksum\nfield, and the bootloader before ESP-IDF v3.1 cannot read a partition\ntable that contains an MD5 checksum field.\n\nEnable this option only if your app needs to boot on a bootloader and/or\npartition table that was generated from a version *before* ESP-IDF v3.1.\n\nIf this option and Flash Encryption are enabled at the same time, and any\ndata partitions in the partition table are marked Encrypted, then the\npartition encrypted flag should be manually verified in the app before accessing\nthe partition (see CVE-2021-27926).",
-                        "id": "ESP32_COMPATIBLE_PRE_V3_1_BOOTLOADERS",
-                        "name": "ESP32_COMPATIBLE_PRE_V3_1_BOOTLOADERS",
-                        "range": null,
-                        "title": "App compatible with bootloader and partition table before ESP-IDF v3.1",
+                        "title": "App compatible with bootloaders before IDF v2.1",
                         "type": "bool"
                     },
                     {
