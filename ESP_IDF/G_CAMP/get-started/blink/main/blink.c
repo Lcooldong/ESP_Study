@@ -16,6 +16,8 @@
    or you can edit the following line and set a number here.
 */
 #define BLINK_GPIO CONFIG_BLINK_GPIO
+#define GPIO_OUTPUT_IO_0 2
+#define GPIO_OUTPUT_PIN_SEL 1ULL<<GPIO_OUTPUT_IO_0  //1ULL : unsigned long long
 
 void app_main(void)
 {
@@ -25,17 +27,39 @@ void app_main(void)
        Technical Reference for a list of pads and their default
        functions.)
     */
+    // struct config
+    gpio_config_t io_conf;
+    io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = GPIO_OUTPUT_PIN_SEL;
+    io_conf.pull_down_en = 0;
+    io_conf.pull_up_en = 0;
+    gpio_config(&io_conf);
+
+    int cnt = 0;
     gpio_reset_pin(BLINK_GPIO);
     /* Set the GPIO as a push/pull output */
     gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
     while(1) {
         /* Blink off (output low) */
-        printf("Turning off the LED\n");
-        gpio_set_level(BLINK_GPIO, 0);
+        cnt++;
+        if(cnt % 2){
+            printf("Turning off the LED: %d\n", cnt);
+            gpio_set_level(GPIO_OUTPUT_IO_0, cnt % 2);
+        }else{
+            printf("Turning on  the LED: %d\n", cnt);
+            gpio_set_level(GPIO_OUTPUT_IO_0, cnt % 2);
+        }
         vTaskDelay(1000 / portTICK_PERIOD_MS);
+
+        //printf("Turning off the LED\n");
+        //gpio_set_level(BLINK_GPIO, 0);
+        //gpio_set_level(GPIO_OUTPUT_IO_0, cnt % 2);
+        
         /* Blink on (output high) */
-        printf("Turning on the LED\n");
-        gpio_set_level(BLINK_GPIO, 1);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        //printf("Turning on the LED\n");
+        //gpio_set_level(BLINK_GPIO, 1);
+        //gpio_set_level(GPIO_OUTPUT_IO_0, cnt % 2);
+        //vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
