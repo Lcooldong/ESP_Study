@@ -1,0 +1,330 @@
+[
+    {
+        "id": "fcef7b631147b1bc",
+        "type": "tab",
+        "label": "WiFi_CAR",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "3edfbc88ae9f007f",
+        "type": "mqtt in",
+        "z": "fcef7b631147b1bc",
+        "name": "",
+        "topic": "MP/Polytech/car1",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "5ae449b91979201c",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 220,
+        "y": 180,
+        "wires": [
+            [
+                "ad867edbc50b13fe",
+                "c1d040f3ba42d5bb"
+            ]
+        ]
+    },
+    {
+        "id": "ad867edbc50b13fe",
+        "type": "function",
+        "z": "fcef7b631147b1bc",
+        "name": "",
+        "func": "msg.payload=String(msg.payload)\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 430,
+        "y": 180,
+        "wires": [
+            [
+                "260c4a0c5f18afce"
+            ]
+        ]
+    },
+    {
+        "id": "260c4a0c5f18afce",
+        "type": "json",
+        "z": "fcef7b631147b1bc",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 570,
+        "y": 180,
+        "wires": [
+            [
+                "ab17ba8693573f2f"
+            ]
+        ]
+    },
+    {
+        "id": "ab17ba8693573f2f",
+        "type": "ui_text",
+        "z": "fcef7b631147b1bc",
+        "group": "d6e8696a7e21853e",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "distance",
+        "format": "{{msg.payload.distance}}",
+        "layout": "row-spread",
+        "className": "",
+        "x": 740,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "c1d040f3ba42d5bb",
+        "type": "debug",
+        "z": "fcef7b631147b1bc",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 460,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "ec2efcdf674c2b24",
+        "type": "ui_button",
+        "z": "fcef7b631147b1bc",
+        "name": "",
+        "group": "d6e8696a7e21853e",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "전진",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "1",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 260,
+        "y": 400,
+        "wires": [
+            [
+                "db1e242ce6b25427"
+            ]
+        ]
+    },
+    {
+        "id": "a9386a69cc673af9",
+        "type": "ui_button",
+        "z": "fcef7b631147b1bc",
+        "name": "",
+        "group": "d6e8696a7e21853e",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "좌회전",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "2",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 130,
+        "y": 460,
+        "wires": [
+            [
+                "db1e242ce6b25427"
+            ]
+        ]
+    },
+    {
+        "id": "a83ea88b9a5bf103",
+        "type": "ui_button",
+        "z": "fcef7b631147b1bc",
+        "name": "",
+        "group": "d6e8696a7e21853e",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "우회전",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "3",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 390,
+        "y": 460,
+        "wires": [
+            [
+                "db1e242ce6b25427"
+            ]
+        ]
+    },
+    {
+        "id": "5de1d032d296c491",
+        "type": "ui_button",
+        "z": "fcef7b631147b1bc",
+        "name": "",
+        "group": "d6e8696a7e21853e",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "후진",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "4",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 270,
+        "y": 520,
+        "wires": [
+            [
+                "db1e242ce6b25427"
+            ]
+        ]
+    },
+    {
+        "id": "db1e242ce6b25427",
+        "type": "mqtt out",
+        "z": "fcef7b631147b1bc",
+        "name": "",
+        "topic": "MP/Polytech/server1",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "5ae449b91979201c",
+        "x": 570,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "e681a24b21043d62",
+        "type": "ui_button",
+        "z": "fcef7b631147b1bc",
+        "name": "",
+        "group": "d6e8696a7e21853e",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "정지",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "5",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 270,
+        "y": 460,
+        "wires": [
+            [
+                "db1e242ce6b25427"
+            ]
+        ]
+    },
+    {
+        "id": "0f1dccc7579e6835",
+        "type": "ui_button",
+        "z": "fcef7b631147b1bc",
+        "name": "",
+        "group": "d6e8696a7e21853e",
+        "order": 6,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "무지개",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "6",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 220,
+        "y": 640,
+        "wires": [
+            [
+                "db1e242ce6b25427"
+            ]
+        ]
+    },
+    {
+        "id": "5ae449b91979201c",
+        "type": "mqtt-broker",
+        "name": "MQTT_DASHBOARD",
+        "broker": "broker.mqtt-dashboard.com",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "willMsg": {},
+        "sessionExpiry": ""
+    },
+    {
+        "id": "d6e8696a7e21853e",
+        "type": "ui_group",
+        "name": "RemoteCar",
+        "tab": "d90f0cbfdada5de5",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "d90f0cbfdada5de5",
+        "type": "ui_tab",
+        "name": "Tab 2",
+        "icon": "dashboard",
+        "order": 2
+    }
+]

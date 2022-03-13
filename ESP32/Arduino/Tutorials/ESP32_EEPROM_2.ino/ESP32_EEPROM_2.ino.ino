@@ -73,7 +73,7 @@ void loop() {
         then we will clear data from EEPROM
     */
     else if (str == "clear") {
-      for (int i = 0 ; i < 512  ; i++) {
+      for (int i = 0 ; i < EEPROM.length() ; i++) {
         EEPROM.write(i, 0);
       }
       // Don't forget EEPROM.end();
