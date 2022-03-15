@@ -39,7 +39,7 @@ void setup() {
     WiFi.mode(WIFI_STA);
     WiFiManager wm;
 
-    //wm.resetSettings();
+    wm.resetSettings();
     bool res;
     res = wm.autoConnect("Light_Switch");
 
