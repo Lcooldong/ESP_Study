@@ -1,0 +1,6 @@
+source "C:/esp-idf/components/app_update/Kconfig.projbuild"
+source "C:/esp-idf/components/bootloader/Kconfig.projbuild"
+source "C:/esp-idf/components/esptool_py/Kconfig.projbuild"
+source "C:/esp-idf/components/partition_table/Kconfig.projbuild"
+source "C:/esp-idf/examples/common_components/protocol_examples_common/Kconfig.projbuild"
+source "D:/Github/ESP/ESP_IDF/advanced_https_ota/main/Kconfig.projbuild"
