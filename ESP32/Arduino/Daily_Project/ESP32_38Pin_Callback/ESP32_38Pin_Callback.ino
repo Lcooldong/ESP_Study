@@ -3,6 +3,7 @@
 
 uint8_t wemos_d1mini[] = {0x08, 0x3A, 0xF2, 0x7D, 0x48, 0xE0};
 uint8_t esp32_38pin[] = {0x08, 0x3A, 0xF2, 0xAA, 0x0C, 0xEC};
+uint8_t wemos_lite[] = {0x78, 0xE3, 0x6D, 0x19, 0x2F, 0x44};
 
 String success;
 uint8_t incomingRGB[3];
@@ -10,10 +11,13 @@ unsigned long t = 0;
 
 typedef struct _struct_message {
     uint8_t RGB[3];
+    uint8_t* Password;
+    uint8_t Password_Length;
 } struct_message;
 
 struct_message incomingReadings;
 struct_message myState;
+char print_buffer[100];
 
 //void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);
 //void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len);
@@ -33,9 +37,10 @@ void setup() {
 
 
   // Register peer
-  esp_now_peer_info_t peerInfo;
-  memcpy(peerInfo.peer_addr, wemos_d1mini, 6); // 6-> address length
-  peerInfo.channel = 0;
+  esp_now_peer_info_t peerInfo = {};
+  //memset(&peerInfo, 0, sizeof(peerInfo));
+  memcpy(peerInfo.peer_addr, wemos_lite, 6); // 6-> address length
+  peerInfo.channel = 1;
   peerInfo.encrypt = false; // 암호화 ID/PW
 
   // Add peer        
@@ -48,17 +53,27 @@ void setup() {
 
   esp_now_register_send_cb(OnDataSent);
   esp_now_register_recv_cb(OnDataRecv);
+
+  
+  esp_err_t result = esp_now_send(esp32_38pin, (uint8_t *) &myState, sizeof(myState));
+
+  if (result == ESP_OK) {
+    Serial.println("Sent with Password");
+  }
+ else {
+    Serial.println("Error sending the password");
+  }
   
 }
 
 void loop() {
-
-  
-  if(millis() - t > 2000){
-    t = millis();
-    //2초마다 한번씩 하겠다!
-    //esp_now_send(wemos_d1mini, (uint8_t *) &data, sizeof(data));
+  if(Serial.available())
+  {
+    myState.password =  Serial.readStringUntil('\r');
+    sprintf(print_buffer, "%PW : s\n", myState.password);
+    
   }
+
 
 
 }
@@ -85,8 +100,18 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
       incomingRGB[i] = incomingReadings.RGB[i];
   }
 
+  Serial.print("RECEIVE DATA:");
+
+  Serial.print("수신 -> Red : ");
+  Serial.println(incomingRGB[0]);
+  Serial.print("Green : ");
+  Serial.println(incomingRGB[1]);
+  Serial.print("Blue : ");
+  Serial.println(incomingRGB[2]);
+
+  
   // Send message via ESP-NOW
-  esp_err_t result = esp_now_send(wemos_d1mini, (uint8_t *) &incomingReadings, sizeof(incomingReadings));
+  esp_err_t result = esp_now_send(wemos_lite, (uint8_t *) &incomingReadings, sizeof(incomingReadings));
 
   if (result == ESP_OK) {
     Serial.println("Sent with success");
@@ -94,6 +119,5 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   else {
     Serial.println("Error sending the data");
   }
-  Serial.print("RECEIVE DATA:");
-  //Serial.println(incomingState);
+
 }

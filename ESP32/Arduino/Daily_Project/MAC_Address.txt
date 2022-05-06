@@ -3,3 +3,6 @@
 
 -Wemo d1 mini esp32
 08:3A:F2:7D:48:E0
+
+-wemos lite v1.0.0
+78:E3:6D:19:2F:44

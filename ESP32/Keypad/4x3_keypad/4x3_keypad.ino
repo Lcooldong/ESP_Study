@@ -19,9 +19,14 @@ char keys[ROWS][COLS] = {
 //byte colPins[COLS] = {5, 4, 3}; //connect to the column pinouts of the keypad
 
 
-//Wemos D1 mini
-byte rowPins[ROWS] = {23, 19, 18, 26}; //connect to the row pinouts of the keypad
-byte colPins[COLS] = {32, 25, 27}; //connect to the column pinouts of the keypad
+////Wemos D1 mini
+//byte rowPins[ROWS] = {23, 19, 18, 26}; //connect to the row pinouts of the keypad
+//byte colPins[COLS] = {32, 25, 27}; //connect to the column pinouts of the keypad
+
+
+//ESP32 Dev module 38Pin
+byte rowPins[ROWS] = {13, 12, 14, 27}; //connect to the row pinouts of the keypad
+byte colPins[COLS] = {26, 33, 32}; //connect to the column pinouts of the keypad
 
 
 //Create an object of keypad
