@@ -6,6 +6,7 @@ uint8_t esp32_38pin[] = {0x08, 0x3A, 0xF2, 0xAA, 0x0C, 0xEC};
 
 String success;
 uint8_t incomingRGB[3];
+unsigned long t = 0;
 
 typedef struct _struct_message {
     uint8_t RGB[3];
@@ -14,8 +15,8 @@ typedef struct _struct_message {
 struct_message incomingReadings;
 struct_message myState;
 
-void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);
-void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len);
+//void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);
+//void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len);
 
 void setup() {
   Serial.begin(115200);
@@ -52,6 +53,12 @@ void setup() {
 
 void loop() {
 
+  
+  if(millis() - t > 2000){
+    t = millis();
+    //2초마다 한번씩 하겠다!
+    //esp_now_send(wemos_d1mini, (uint8_t *) &data, sizeof(data));
+  }
 
 
 }
