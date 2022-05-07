@@ -2,6 +2,16 @@
 #include <WiFi.h>
 #include <Keypad.h>
 
+// 15번 2번 핀     16개(12~15)/12개(8~11)/8개(4~7)/4개(0~3) -> 2^3/0/0/2^2 (1=2^0, 2, 4, 8=2^3)
+#define BUTTON_PIN_BITMASK 0x8004
+RTC_DATA_ATTR int bootCount = 0;
+
+
+unsigned long last_Time = 0;
+unsigned long close_Time = 0;
+unsigned long interval = 10000;
+uint8_t deepSleepFlag = 0;
+uint8_t touch_PIN = 5;
 
 ////////////////////////
 ////////KeyPad//////////
@@ -65,7 +75,6 @@ void setup() {
     ESP.restart();
   }
 
-
   // Register peer
   esp_now_peer_info_t peerInfo = {};
   //memset(&peerInfo, 0, sizeof(peerInfo));
@@ -90,7 +99,7 @@ void setup() {
     ledcAttachPin(RGB_PIN[i], i);
     ledcSetup(i, 5000, 8);
   }
-
+  pinMode(touch_PIN, INPUT_PULLUP);
 
   strcpy(myState.Password, "0000");
   pw_str = myState.Password;  // char* -> string
@@ -111,13 +120,25 @@ void setup() {
   }
   
   Serial.println("\n==========Setup============");
+
+
+
+  ++bootCount;
+  Serial.println("Boot number: " + String(bootCount));
+
+  print_wakeup_reason();
+  print_GPIO_wake_up();
+
+  esp_sleep_enable_ext1_wakeup(BUTTON_PIN_BITMASK, ESP_EXT1_WAKEUP_ANY_HIGH);
+
 }
 
 void loop() {
 
-  if(Serial.available()){
-    Serial.read();
-  }
+
+//  if(Serial.available()){
+//    Serial.read();
+//  }
 
   char key = keypad.getKey();
   if(key){
@@ -199,7 +220,7 @@ void loop() {
       }
       
     }
-    else
+    else if(key == '#')
     {
       pw_cnt = 0;
       for(int i=0; i <pw_length; i++)
@@ -214,6 +235,28 @@ void loop() {
       }
       Serial.println();
     }
+
+    
+  }
+
+
+  // touch가 안될 때 마지막 터치 시간(last_Time)으로부터 10초 지나면 딥슬립
+  if(digitalRead(touch_PIN) == 1)
+  {
+      last_Time = millis();
+  }
+  else  // touch 안될 때
+  {
+    close_Time = millis() - start_Time;
+    Serial.println(close_Time);
+    if(close_Time>= interval)
+    {   
+      Serial.println("Going to sleep now");
+      delay(1000);
+      esp_deep_sleep_start();
+      Serial.println("This will never be printed");
+    }
+    
   }
 }
 
@@ -257,4 +300,26 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   Serial.print("Received PW : ");
   Serial.println(incomingReadings.Password);
   
+}
+
+void print_wakeup_reason(){
+  esp_sleep_wakeup_cause_t wakeup_reason;
+
+  wakeup_reason = esp_sleep_get_wakeup_cause();
+
+  switch(wakeup_reason)
+  {
+    case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
+    case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
+    case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); break;
+    case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
+    case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
+    default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
+  }
+}
+
+void print_GPIO_wake_up(){
+  uint64_t GPIO_reason = esp_sleep_get_ext1_wakeup_status();
+  Serial.print("GPIO that triggered the wake up: GPIO ");
+  Serial.println((log(GPIO_reason))/log(2), 0);  
 }
