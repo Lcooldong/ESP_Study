@@ -3,12 +3,6 @@
 #include <WiFiManager.h>
 #define EEPROM_SIZE 128
 
-// Replace with your network credentials (STATION)
-//const char* ssid = "IT";
-//const char* password = "@Polytech";
-const char* ssid = "LDH";
-const char* password = "ehdgml43";
-
 unsigned long connectingTime = 0;
 unsigned long connecting_interval = 10000;
 int WiFiManger_flag = 0;
@@ -91,27 +85,11 @@ void setup() {
   initWiFi();
   Serial.print("RSSI: ");
   Serial.println(WiFi.RSSI());
-  
 
 }
 
 void loop() {
-  unsigned long currentMillis = millis();
-  // if WiFi is down, try reconnecting every CHECK_WIFI_TIME seconds
-  
-  if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) {
-    Serial.println(millis());
-    Serial.println("Reconnecting to WiFi...");
-    WiFi.disconnect();
-    WiFi.reconnect();
-    connection_flag = 1;
-    previousMillis = currentMillis;
-  }
-  else if(connection_flag == 1)
-  {
-    Serial.println("reconnected");  
-    connection_flag = 0;
-  }
+  reconnectWiFi();
 
   
 }
@@ -137,4 +115,23 @@ void readWiFiEEPROM(){
     Serial.println(EEPROM_SSID);
     Serial.print("EEPROM SSID : ");
     Serial.println(EEPROM_PW);  
+}
+
+void reconnectWiFi(){
+  unsigned long currentMillis = millis();
+  // if WiFi is down, try reconnecting every CHECK_WIFI_TIME seconds
+  
+  if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) {
+    Serial.println(millis());
+    Serial.println("Reconnecting to WiFi...");
+    WiFi.disconnect();
+    WiFi.reconnect();
+    connection_flag = 1;
+    previousMillis = currentMillis;
+  }
+  else if(connection_flag == 1)
+  {
+    Serial.println("reconnected");  
+    connection_flag = 0;
+  }
 }
