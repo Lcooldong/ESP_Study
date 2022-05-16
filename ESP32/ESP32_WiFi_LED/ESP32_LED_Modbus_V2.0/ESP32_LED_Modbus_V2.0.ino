@@ -6,13 +6,13 @@
 
 int cnt = 0;
 
-const int REG = 321;               // Modbus Hreg Offset
-IPAddress remote(127, 0, 0, 1);  // Address of Modbus Slave device
+const int REG = 200;               // Modbus Hreg Offset
+IPAddress remote(192, 168, 0, 236);  // Address of Modbus Slave device
 const int LOOP_COUNT = 1;
 
 ModbusIP mb;  //ModbusIP object
 
-uint16_t res = 424;
+uint16_t res = 0;
 uint8_t show = LOOP_COUNT;
 
 
