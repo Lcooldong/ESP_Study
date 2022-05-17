@@ -20,8 +20,9 @@ typedef struct packet_
     uint8_t RED;  // 데이터 타입 : 1
     uint8_t GREEN;
     uint8_t BLUE;
-    uint8_t style;            // 데이터 : 4
     uint8_t brightness;
+    uint8_t style;            // 데이터 : 4 
+    uint8_t wait;
     uint8_t checksum;  // 체크섬 : 2
 }PACKET;
 #pragma pack(pop)
@@ -39,7 +40,7 @@ PACKET incomingReadings;
 
 STYLE_Typedef _style;
 
-char packet_buffer[128];
+char packet_buffer[256];
 
 int cnt = 0;
 int neopixel_Flag = 0;
@@ -101,7 +102,7 @@ void loop() {
       // packet 사이즈만큼 읽어옴
       Serial.readBytes((char*)&_data, sizeof(_data));
        _data.checksum += 1;
-      Serial.write((char*)&_data, sizeof(_data));
+//      Serial.write((char*)&_data, sizeof(_data));
       if( _data.checksum == 1){
         neopixel_Flag = 1;  
       }
@@ -111,7 +112,7 @@ void loop() {
         case oneColor:
           string_style = "oneColor";
           poutput(string_style);
-          pickOneLED(0, _data.RED, _data.GREEN, _data.BLUE, _data.brightness);
+          pickOneLED(0, _data.RED, _data.GREEN, _data.BLUE, _data.brightness, _data.wait);
           break;
         case CHASE:
           string_style = "chase";
@@ -120,17 +121,18 @@ void loop() {
           
       }
       
-      const char* format = "%d : [%d, %d, %d] style: %s, %d, %d";
+      const char* format = "%d : [%d, %d, %d] style: %s, %d, %d %d";
       sprintf(packet_buffer, format, _data.led_number,
                                      _data.RED,
                                      _data.GREEN,
                                      _data.BLUE,
-                                     string_style,
                                      _data.brightness,
+                                     string_style,                                    
+                                     _data.wait,
                                      _data.checksum );
                                      
       poutput(packet_buffer);
-      delay(100);
+      delay(50);
   }
  
 

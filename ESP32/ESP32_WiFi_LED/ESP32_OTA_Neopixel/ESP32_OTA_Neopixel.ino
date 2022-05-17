@@ -28,11 +28,21 @@ void setup() {
 void loop() {
   reconnectWiFi();
   ArduinoOTA.handle();
-  //pickOneLED(0, strip.Color(255,   0,   0), 50);
-  rainbow(10);
+//  for(int i=1; i<= 4; i++){
+//    strip.setBrightness(50*i);
+//    pickOneLED(0, strip.Color(255,   0,   0), 50);
+//    delay(1000);
+//  }
+  strip.setBrightness(5);
+  pickOneLED(0, strip.Color(255,   0,   0), 50);
+  
+  //rainbow(10);
   TelnetStream.println(cnt);
   cnt++;
-  delay(500);
+  delay(100);
+
+  
+  
 }
 
 

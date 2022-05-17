@@ -42,7 +42,7 @@ void setupOTA(const char* nameprefix);
 void writeWiFiEEPROM();
 void readWiFiEEPROM();
 void showOLED_IP_Address();
-void pickOneLED(uint8_t ledNum, uint8_t R, uint8_t G, uint8_t B, int wait);
+void pickOneLED(uint8_t ledNum, uint8_t R, uint8_t G, uint8_t B, uint8_t brightness, uint8_t wait);
 void colorWipe(uint32_t color, int wait);
 void theaterChase(uint32_t color, int wait);
 void rainbow(int wait);

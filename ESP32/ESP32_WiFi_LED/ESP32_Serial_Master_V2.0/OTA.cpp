@@ -139,16 +139,16 @@ void initWiFi() {
   {
     Serial.print('.');
     //delay(1000);
-    pickOneLED(0, 255, 0, 0, 400);
-    pickOneLED(0, 0, 0, 0, 200);
-    pickOneLED(0, 255, 0, 0, 400);
-    pickOneLED(0, 0, 0, 0, 200);
+    pickOneLED(0, 255, 0, 0, 50, 400);
+    pickOneLED(0, 0, 0, 0, 50, 200);
+    pickOneLED(0, 255, 0, 0, 50, 400);
+    pickOneLED(0, 0, 0, 0, 50, 200);
     connecting_interval = millis();
     if(connecting_interval >= connecting_interval)
     {
       Serial.println();
       Serial.println("Not Connected -> Open WiFi Manager");
-      pickOneLED(0, 255, 0, 0, 50);
+      pickOneLED(0, 255, 0, 0, 50, 50);
       WiFiManger_flag = 1;
       break;
     }
@@ -175,11 +175,11 @@ void initWiFi() {
         Serial.println(PW_NAME);
         //if you get here you have connected to the WiFi    
         Serial.println("connected...yeey :)");
-        pickOneLED(0, 0,   0,   255, 200);
-        pickOneLED(0, 0,   0,   0, 200);
-        pickOneLED(0, 0,   0,   255, 200);
-        pickOneLED(0, 0,   0,   0, 200);
-        pickOneLED(0, 0,   0,   255, 50);
+        pickOneLED(0, 0, 0, 255, 50, 200);
+        pickOneLED(0, 0, 0, 0, 50, 200);
+        pickOneLED(0, 0, 0, 255, 50, 200);
+        pickOneLED(0, 0, 0, 0, 50, 200);
+        pickOneLED(0, 0, 0, 255, 50, 50);
         SSID_NAME.toCharArray(TEMP_SSID, sizeof(TEMP_SSID));
         PW_NAME.toCharArray(TEMP_PW, sizeof(TEMP_PW));
         writeWiFiEEPROM();
@@ -192,7 +192,7 @@ void initWiFi() {
     Serial.print("connected ->");
     Serial.println(WiFi.localIP());
     showOLED_IP_Address();
-    pickOneLED(0, 0,   0,   255, 50);
+    pickOneLED(0, 0,   0,   255, 50, 50);
     
   }
   readWiFiEEPROM();
@@ -297,8 +297,9 @@ void showOLED_IP_Address(){
 
 
 
-void pickOneLED(uint8_t ledNum, uint8_t R, uint8_t G, uint8_t B, int wait){
-    strip.setPixelColor(ledNum, strip.Color(R, G, B));         
+void pickOneLED(uint8_t ledNum, uint8_t R, uint8_t G, uint8_t B, uint8_t brightness, uint8_t wait){
+    strip.setBrightness(brightness);
+    strip.setPixelColor(ledNum, strip.Color(R, G, B));  
     strip.show();                                               
     delay(wait);
 }
