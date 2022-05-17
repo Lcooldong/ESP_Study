@@ -10,7 +10,7 @@ typedef struct packet_
     uint8_t GREEN;
     uint8_t BLUE;
     uint8_t style;            // 데이터 : 4
-    uint8_t brighness;
+    uint8_t brightness;
     uint8_t checksum;  // 체크섬 : 2
 }PACKET;
 #pragma pack(pop)
@@ -29,7 +29,7 @@ STYLE_Typedef _style;
 char packet_buffer[128];
 
 int cnt = 0;
-
+int neopixel_Flag = 0;
 
 
 void setup() {
@@ -57,12 +57,16 @@ void loop() {
       Serial.readBytes((char*)&_data, sizeof(_data));
        _data.checksum += 1;
       Serial.write((char*)&_data, sizeof(_data));
+      if( _data.checksum == 1){
+        neopixel_Flag = 1;  
+      }
       String string_style = "";
       switch(_data.style)
       {
         case oneColor:
           string_style = "oneColor";
           poutput(string_style);
+          pickOneLED(0, _data.RED, _data.GREEN, _data.BLUE, _data.brightness);
           break;
         case CHASE:
           string_style = "chase";
@@ -77,7 +81,7 @@ void loop() {
                                      _data.GREEN,
                                      _data.BLUE,
                                      string_style,
-                                     _data.brighness,
+                                     _data.brightness,
                                      _data.checksum );
                                      
       poutput(packet_buffer);
