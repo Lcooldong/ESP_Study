@@ -158,7 +158,7 @@ void reconnectWiFi(){
     portENTER_CRITICAL(&timerMux); // 카운트 시작 
     count1--;                       // 트리거 시간 감소
     portEXIT_CRITICAL(&timerMux);  // 카운트 종료
-    Serial.println("reconnect working");
+//    Serial.println("reconnect working");
     if ((WiFi.status() != WL_CONNECTED)) {
       Serial.println(millis());
       Serial.println("Reconnecting to WiFi...");

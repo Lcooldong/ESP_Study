@@ -86,7 +86,6 @@ void initWiFi() {
           pass[i] = TEMP_PASS[i];
         }
         saveConfig();
-//        writeWiFiEEPROM();
         
         ESP.restart();
     }
@@ -112,58 +111,61 @@ void initWiFi() {
 
 void changeWiFi(){
   WiFi.disconnect();
+  WiFi.mode(WIFI_STA);
+  blinkNeopixel(255, 255, 0, 2);
   WiFiManager wm;
   wm.resetSettings();
-    bool res;
-    res = wm.autoConnect("RemoteLED");
-    
-    if(!res) 
-    {
-        Serial.println("Failed to connect");
-        // ESP.restart();
-    } 
-    else 
-    {
-        String SSID_NAME = WiFiManager().getWiFiSSID();
-        String PW_NAME = WiFiManager().getWiFiPass();
-        Serial.print("SSID : ");
-        Serial.println(SSID_NAME);
-        
-        Serial.print("PASSWORD : ");
-        Serial.println(PW_NAME);
-        
-        //if you get here you have connected to the WiFi    
-        Serial.println("connected...yeey :)");
-        blinkNeopixel(0, 0, 255, 2);
-        SSID_NAME.toCharArray(TEMP_SSID, sizeof(TEMP_SSID));
-        PW_NAME.toCharArray(TEMP_PASS, sizeof(TEMP_PASS));
+  bool res;
+  res = wm.autoConnect("Change_ESP_WiFi");
+  if(!res) 
+  {
+      Serial.println("Failed to connect");
+      // ESP.restart();
+  } 
+  else 
+  {
+      String SSID_NAME = WiFiManager().getWiFiSSID();
+      String PW_NAME = WiFiManager().getWiFiPass();
+      Serial.print("SSID : ");
+      Serial.println(SSID_NAME);
+       
+      Serial.print("PASSWORD : ");
+      Serial.println(PW_NAME);
+      
+      //if you get here you have connected to the WiFi    
+      Serial.println("connected...yeey :)");
+      blinkNeopixel(0, 0, 255, 2);
+      SSID_NAME.toCharArray(TEMP_SSID, sizeof(TEMP_SSID));
+      PW_NAME.toCharArray(TEMP_PASS, sizeof(TEMP_PASS));
 
-        for(int i=0; i< sizeof(ssid); i++){
-          ssid[i] = TEMP_SSID[i];
-          pass[i] = TEMP_PASS[i];
-        }
-        saveConfig();
-        
-        ESP.restart();
-    }
+      for(int i=0; i< sizeof(ssid); i++){
+        ssid[i] = TEMP_SSID[i];
+        pass[i] = TEMP_PASS[i];
+      }
+      saveConfig();
+      pickOneLED(0, 255, 255, 0, 50, 1000);
+      ESP.restart();
+  }
 }
 
 void reconnectWiFi(){
-  if ((WiFi.status() != WL_CONNECTED) && (count1 == 1)) {
+  if(count1 >0 ){
     portENTER_CRITICAL(&timerMux); // 카운트 시작 
     count1--;                       // 트리거 시간 감소
     portEXIT_CRITICAL(&timerMux);  // 카운트 종료
-    
-    Serial.println(millis());
-    Serial.println("Reconnecting to WiFi...");
-    
-    WiFi.disconnect();
-    WiFi.reconnect();
-    connection_flag = 1;
-  }
-  else if(connection_flag == 1)
-  {
-    Serial.println("reconnected");  
-    connection_flag = 0;
+    Serial.println("reconnect working");
+    if ((WiFi.status() != WL_CONNECTED)) {
+      Serial.println(millis());
+      Serial.println("Reconnecting to WiFi...");
+      
+      WiFi.disconnect();
+      WiFi.reconnect();
+      connection_flag = 1;
+    }
+    else if(connection_flag == 1)
+    {
+      Serial.println("reconnected");  
+      connection_flag = 0;
+    }
   }
 }

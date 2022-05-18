@@ -33,14 +33,8 @@ void setup() {
 
 
 void loop() {
-  reconnectWiFi();
+  reconnectWiFi(); 
 
-  if(Serial.available()){
-    char ch = Serial.read();
-    if (ch == 'r'){
-      changeWiFi();
-    }  
-  }
 }
 
 
