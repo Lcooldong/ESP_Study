@@ -1,8 +1,12 @@
 #define ESP32_RTOS  // Uncomment this line if you want to use the code with freertos only on the ESP32
                     // Has to be done before including "OTA.h"
+#define ESP32
 
 #include "OTA.h"
-#include <credentials.h>
+//#include <credentials.h>
+
+cost char* mySSID = "2KNG";
+const char* myPASSWORD = "77120094";
 
 void setup() {
   Serial.begin(115200);
