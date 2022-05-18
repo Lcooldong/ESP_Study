@@ -33,7 +33,7 @@ char EEPROM_SSID[32];
 char EEPROM_PW[32];
 
 
-extern int neopixel_Flag;
+//extern int neopixel_Flag;
 
 void init_Neopixel(uint8_t brightness){
 #if defined(__AVR_ATtiny85__) && (F_CPU == 16000000)
@@ -139,10 +139,7 @@ void initWiFi() {
   {
     Serial.print('.');
     //delay(1000);
-    pickOneLED(0, 255, 0, 0, 50, 400);
-    pickOneLED(0, 0, 0, 0, 50, 200);
-    pickOneLED(0, 255, 0, 0, 50, 400);
-    pickOneLED(0, 0, 0, 0, 50, 200);
+    blinkNeopixel(0, 255, 0, 2);
     connecting_interval = millis();
     if(connecting_interval >= connecting_interval)
     {
@@ -175,11 +172,7 @@ void initWiFi() {
         Serial.println(PW_NAME);
         //if you get here you have connected to the WiFi    
         Serial.println("connected...yeey :)");
-        pickOneLED(0, 0, 0, 255, 50, 200);
-        pickOneLED(0, 0, 0, 0, 50, 200);
-        pickOneLED(0, 0, 0, 255, 50, 200);
-        pickOneLED(0, 0, 0, 0, 50, 200);
-        pickOneLED(0, 0, 0, 255, 50, 50);
+        blinkNeopixel(0, 0, 255, 2);
         SSID_NAME.toCharArray(TEMP_SSID, sizeof(TEMP_SSID));
         PW_NAME.toCharArray(TEMP_PW, sizeof(TEMP_PW));
         writeWiFiEEPROM();
@@ -304,6 +297,12 @@ void pickOneLED(uint8_t ledNum, uint8_t R, uint8_t G, uint8_t B, uint8_t brightn
     delay(wait);
 }
 
+void blinkNeopixel(uint8_t R, uint8_t G, uint8_t B, int times){
+  for(int i = 0; i < times; i++){
+    pickOneLED(0, R, G, B, 50, 500);
+    pickOneLED(0, R, G, B, 50, 500);
+  }
+}
 
 
 // Some functions of our own for creating animated effects -----------------
@@ -318,7 +317,7 @@ void colorWipe(uint32_t color, int wait) {
     strip.setPixelColor(i, color);         //  Set pixel's color (in RAM)
     strip.show();                          //  Update strip to match
     delay(wait);                           //  Pause for a moment
-    if(neopixel_Flag == 1) break;
+//    if(neopixel_Flag == 1) break;
   }
 }
 

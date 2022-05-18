@@ -9,8 +9,9 @@ typedef struct packet_
     uint8_t RED;  // 데이터 타입 : 1
     uint8_t GREEN;
     uint8_t BLUE;
-    uint8_t style;            // 데이터 : 4
-    uint8_t brighness;
+    uint8_t brightness;
+    uint8_t style;            // 데이터 : 4 
+    uint8_t wait;
     uint8_t checksum;  // 체크섬 : 2
 }PACKET;
 #pragma pack(pop)
@@ -40,6 +41,7 @@ void loop()
         // 데이터 값에 + 1을 한 뒤에 다시 전송
         _data.checksum += 1;
         Serial.write((char*)&_data, sizeof(_data));
+        mySerial.println(sizeof(_data));
 
         delay(100);
     }

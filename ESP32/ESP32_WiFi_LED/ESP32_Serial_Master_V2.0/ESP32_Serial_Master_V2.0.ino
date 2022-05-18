@@ -94,47 +94,48 @@ void setup() {
 void loop() {
   reconnectWiFi();
   ArduinoOTA.handle();
-  //pickOneLED(0, strip.Color(255,   0,   0), 50);
-//  rainbow(10);
 
   if(Serial.available())
   {  
       // packet 사이즈만큼 읽어옴
       Serial.readBytes((char*)&_data, sizeof(_data));
        _data.checksum += 1;
-//      Serial.write((char*)&_data, sizeof(_data));
-      if( _data.checksum == 1){
-        neopixel_Flag = 1;  
-      }
-      String string_style = "";
-      switch(_data.style)
-      {
-        case oneColor:
-          string_style = "oneColor";
-          poutput(string_style);
-          pickOneLED(0, _data.RED, _data.GREEN, _data.BLUE, _data.brightness, _data.wait);
-          break;
-        case CHASE:
-          string_style = "chase";
-          poutput(string_style);
-          break;  
-          
-      }
-      
-      const char* format = "%d : [%d, %d, %d] style: %s, %d, %d %d";
-      sprintf(packet_buffer, format, _data.led_number,
-                                     _data.RED,
-                                     _data.GREEN,
-                                     _data.BLUE,
-                                     _data.brightness,
-                                     string_style,                                    
-                                     _data.wait,
-                                     _data.checksum );
-                                     
-      poutput(packet_buffer);
+       neopixel_Flag = 1; 
+      Serial.write((char*)&_data, sizeof(_data));
+      pickOneLED(0, _data.RED, _data.GREEN, _data.BLUE, _data.brightness, _data.wait);
       delay(50);
+  }   
+
+  if( neopixel_Flag == 1 ){
+    neopixel_Flag = 0;  
+
+    String string_style = "";
+    switch(_data.style)
+    {
+      case oneColor:
+        string_style = "oneColor";
+        poutput(string_style);
+        pickOneLED(0, _data.RED, _data.GREEN, _data.BLUE, _data.brightness, _data.wait);
+        break;
+      case CHASE:
+        string_style = "chase";
+        poutput(string_style);
+        break;  
+        
+    }
+    
+//    const char* format = "%d : [%d, %d, %d] style: %s, %d, %d %d";
+//    sprintf(packet_buffer, format, _data.led_number,
+//                                   _data.RED,
+//                                   _data.GREEN,
+//                                   _data.BLUE,
+//                                   _data.brightness,
+//                                   string_style,                                    
+//                                   _data.wait,
+//                                   _data.checksum );
+//                                   
+//    poutput(packet_buffer);
   }
- 
 
 }
 
