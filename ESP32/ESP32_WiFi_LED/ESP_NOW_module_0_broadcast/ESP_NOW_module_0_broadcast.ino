@@ -14,7 +14,7 @@ unsigned long t = 0;
 #pragma pack(push, 1)
 typedef struct packet_
 {
-    uint8_t led_number; // 시작 사인 : 1
+    uint8_t device_led;
     uint8_t RED;  // 데이터 타입 : 1
     uint8_t GREEN;
     uint8_t BLUE;
@@ -31,7 +31,7 @@ typedef enum {
   RAINBOW
 }STYLE_Typedef;
 
-STYLE_Typedef _style;
+//STYLE_Typedef _style;
 
 PACKET serial_data = {0, };
 PACKET incomingReadings;
@@ -40,8 +40,7 @@ int neopixel_Flag = 0;
 
 esp_now_peer_info_t peerInfo;
 
-//void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);
-//void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len);
+
 
 void setup() {
   Serial.begin(115200);
@@ -79,29 +78,21 @@ void setup() {
 void loop() {
   if(Serial.available())
   {
-    char ch = Serial.read();
-    if(ch == 's')
-    {
-      serial_data.led_number = 1;
-      serial_data.RED = 255;
-      serial_data.GREEN = 43;
-      serial_data.BLUE = 123;
-      serial_data.brightness = 50;
-      serial_data.style = 1;
-      serial_data.wait = 100;
-      serial_data.checksum = 0;
-      //esp_err_t result = esp_now_send(wemos_lite, (uint8_t *) &serial_data, sizeof(serial_data));
+      // packet 사이즈만큼 읽어옴
+      Serial.readBytes((char*)&serial_data, sizeof(serial_data));
+      serial_data.checksum += 1;
+      neopixel_Flag = 1;
       Serial.println("-----------------------");
       broadcast((uint8_t *) &serial_data, sizeof(serial_data));
+      //Serial.write((char*)&serial_data, sizeof(serial_data));
+      delay(50);
+  }
 
-//      if (result == ESP_OK) {
-//        Serial.println("Sent with success");
-//      }
-//      else {
-//        Serial.println("Error sending the data");
-//      }
-   } 
-    delay(100);
+
+  if( neopixel_Flag == 1 ){
+    
+    neopixel_Flag = 0;  
+
   }
   
 
@@ -112,43 +103,43 @@ void loop() {
 
 // Callback when data is sent
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  char macStr[18];
-  formatMacAddress(mac_addr, macStr, 18);
-  Serial.print("Last Packet Sent to: ");
-  Serial.println(macStr);
-  
-  Serial.print("Last Packet Send Status: ");
-  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
-  if (status ==0){
-    success = "Delivery Success :)";
-  }
-  else{
-    success = "Delivery Fail :(";
-  }
+//  char macStr[18];
+//  formatMacAddress(mac_addr, macStr, 18);
+//  Serial.print("Last Packet Sent to: ");
+//  Serial.println(macStr);
+//  
+//  Serial.print("Last Packet Send Status: ");
+//  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+//  if (status ==0){
+//    success = "Delivery Success :)";
+//  }
+//  else{
+//    success = "Delivery Fail :(";
+//  }
 }
 
 // Callback when data is received
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   memcpy(&incomingReadings, incomingData, sizeof(incomingReadings));
-  Serial.print("Bytes received: ");
-  Serial.println(len);
-
-
-  char macStr[18];
-  formatMacAddress(mac, macStr, 18);
-  // debug log the message to the serial port
-  Serial.printf("Received message from: %s\n", macStr);
-  incomingRGB[0] = incomingReadings.RED;
-  incomingRGB[1] = incomingReadings.GREEN;
-  incomingRGB[2] = incomingReadings.BLUE;
-  
-
-  Serial.print("수신 -> Red : ");
-  Serial.println(incomingRGB[0]);
-  Serial.print("Green : ");
-  Serial.println(incomingRGB[1]);
-  Serial.print("Blue : ");
-  Serial.println(incomingRGB[2]);
+//  Serial.print("Bytes received: ");
+//  Serial.println(len);
+//
+//
+//  char macStr[18];
+//  formatMacAddress(mac, macStr, 18);
+//  // debug log the message to the serial port
+//  Serial.printf("Received message from: %s\n", macStr);
+//  incomingRGB[0] = incomingReadings.RED;
+//  incomingRGB[1] = incomingReadings.GREEN;
+//  incomingRGB[2] = incomingReadings.BLUE;
+//  
+//
+//  Serial.print("수신 -> Red : ");
+//  Serial.println(incomingRGB[0]);
+//  Serial.print("Green : ");
+//  Serial.println(incomingRGB[1]);
+//  Serial.print("Blue : ");
+//  Serial.println(incomingRGB[2]);
 
 //  esp_err_t result = esp_now_send(wemos_lite, (uint8_t *) &incomingReadings, sizeof(incomingReadings));
 //
@@ -187,32 +178,32 @@ void broadcast(const uint8_t * broadcastData, int dataSize)
     esp_now_add_peer(&peerInfo);
   }
   esp_err_t result = esp_now_send(peerAddress, (const uint8_t *)message.c_str(), message.length());*/
-  if (result == ESP_OK)
-  {
-    Serial.println("Broadcast message success");
-  }
-  else if (result == ESP_ERR_ESPNOW_NOT_INIT)
-  {
-    Serial.println("ESPNOW not Init.");
-  }
-  else if (result == ESP_ERR_ESPNOW_ARG)
-  {
-    Serial.println("Invalid Argument");
-  }
-  else if (result == ESP_ERR_ESPNOW_INTERNAL)
-  {
-    Serial.println("Internal Error");
-  }
-  else if (result == ESP_ERR_ESPNOW_NO_MEM)
-  {
-    Serial.println("ESP_ERR_ESPNOW_NO_MEM");
-  }
-  else if (result == ESP_ERR_ESPNOW_NOT_FOUND)
-  {
-    Serial.println("Peer not found.");
-  }
-  else
-  {
-    Serial.println("Unknown error");
-  }
+//  if (result == ESP_OK)
+//  {
+//    Serial.println("Broadcast message success");
+//  }
+//  else if (result == ESP_ERR_ESPNOW_NOT_INIT)
+//  {
+//    Serial.println("ESPNOW not Init.");
+//  }
+//  else if (result == ESP_ERR_ESPNOW_ARG)
+//  {
+//    Serial.println("Invalid Argument");
+//  }
+//  else if (result == ESP_ERR_ESPNOW_INTERNAL)
+//  {
+//    Serial.println("Internal Error");
+//  }
+//  else if (result == ESP_ERR_ESPNOW_NO_MEM)
+//  {
+//    Serial.println("ESP_ERR_ESPNOW_NO_MEM");
+//  }
+//  else if (result == ESP_ERR_ESPNOW_NOT_FOUND)
+//  {
+//    Serial.println("Peer not found.");
+//  }
+//  else
+//  {
+//    Serial.println("Unknown error");
+//  }
 }
