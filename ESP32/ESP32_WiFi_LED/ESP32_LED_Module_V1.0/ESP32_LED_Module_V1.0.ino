@@ -82,12 +82,11 @@ void setup() {
   //esp_now_peer_info_t peerInfo = {};
   //memset(&peerInfo, 0, sizeof(peerInfo));
 
-  peerInfo.channel = 0;  
-  peerInfo.encrypt = false; // 암호화 ID/PW
 
-  add_peer(wemos_lite);
-  add_peer(esp32_38pin);
-  add_peer(wemos_d1mini);
+  add_peer(wemos_lite, 1);
+  add_peer(esp32_38pin, 2);
+//  add_peer(wemos_d1mini);
+  add_peer(esp_module_0, 4);
 
   esp_now_register_send_cb(OnDataSent);
   esp_now_register_recv_cb(OnDataRecv);
@@ -104,48 +103,49 @@ void setup() {
 void loop() {
   reconnectWiFi(); 
 
-  if(Serial.available())
-  {  
-      // packet 사이즈만큼 읽어옴
-      Serial.readBytes((char*)&serial_data, sizeof(serial_data));
-      serial_data.checksum += 1;
-      neopixel_Flag = 1; 
-      Serial.write((char*)&serial_data, sizeof(serial_data));
-      pickOneLED(0, serial_data.RED, serial_data.GREEN, serial_data.BLUE, serial_data.brightness, serial_data.wait);
-      delay(50);
-          
- 
-  }
-
-  if(serial_data.led_number == 255) 
-  {
-      server.end();
-      pickOneLED(0, 255, 255, 255, 50, 50);
-      print_output("Reset WiFi");
-      changeWiFi();
-      server.begin();
-      ESP.restart();
-  }
-
-  
-  if( neopixel_Flag == 1 ){
-    
-    neopixel_Flag = 0;  
-    String string_style = "";
-    
-    switch(serial_data.style)
-    {
-      case oneColor:
-        string_style = "oneColor";
-        print_output(string_style);
-        pickOneLED(0, serial_data.RED, serial_data.GREEN, serial_data.BLUE, serial_data.brightness, serial_data.wait);
-        break;
-      case CHASE:
-        string_style = "chase";
-        print_output(string_style);
-        break;         
-    }
-  }
+//  if(Serial.available())
+//  {  
+//      // packet 사이즈만큼 읽어옴
+//      Serial.readBytes((char*)&serial_data, sizeof(serial_data));
+//      serial_data.checksum += 1;
+//      neopixel_Flag = 1; 
+//      Serial.write((char*)&serial_data, sizeof(serial_data));
+//      
+//     
+//      delay(50);         
+//  }
+//
+//
+//  
+//  if(serial_data.led_number == 255) 
+//  {
+//      server.end();
+//      pickOneLED(0, 255, 255, 255, 50, 50);
+//      print_output("Reset WiFi");
+//      changeWiFi();
+//      server.begin();
+//      ESP.restart();
+//  }
+//
+//  
+//  if( neopixel_Flag == 1 ){
+//    
+//    neopixel_Flag = 0;  
+//    String string_style = "";
+//    
+//    switch(serial_data.style)
+//    {
+//      case oneColor:
+//        string_style = "oneColor";
+//        print_output(string_style);
+//        pickOneLED(0, serial_data.RED, serial_data.GREEN, serial_data.BLUE, serial_data.brightness, serial_data.wait);
+//        break;
+//      case CHASE:
+//        string_style = "chase";
+//        print_output(string_style);
+//        break;         
+//    }
+//  }
 
 
 }
@@ -156,7 +156,9 @@ void print_output(String _string){
   mySerial.println(_string);
 }
 
-void add_peer(uint8_t peer_name[]){
+void add_peer(uint8_t peer_name[], uint8_t _channel){
+  peerInfo.channel = _channel;  
+  peerInfo.encrypt = false; // 암호화 ID/PW
   /// register third peer
   memcpy(peerInfo.peer_addr, peer_name, 6);
   if (esp_now_add_peer(&peerInfo) != ESP_OK){
@@ -183,6 +185,13 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   // 받을 구조체, 버퍼(받은 데이터), 구조체 크기
   memcpy(&incomingReadings, incomingData, sizeof(incomingReadings));
+
+  pickOneLED(0, incomingReadings.RED,
+                incomingReadings.GREEN,
+                incomingReadings.BLUE,
+                incomingReadings.brightness,
+                incomingReadings.wait);
+ 
   
   Serial.print("Bytes received: ");
   Serial.println(len);
@@ -190,7 +199,6 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   incomingRGB[0] = incomingReadings.RED;
   incomingRGB[0] = incomingReadings.GREEN;
   incomingRGB[0] = incomingReadings.BLUE;
-  
 
   Serial.print("수신 -> Red : ");
   Serial.println(incomingRGB[0]);

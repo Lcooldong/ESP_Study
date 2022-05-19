@@ -29,6 +29,10 @@ void initWiFi() {
   listDir("/");
   initOLED();
   WiFi.mode(WIFI_STA);
+  esp_wifi_set_promiscuous(true);
+  esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
+  esp_wifi_set_promiscuous(false);
+  
   WiFiManager wm;
   Serial.println("--------Saved Data--------");
   if (SPIFFS.exists("/config.txt")) loadConfig();
@@ -96,8 +100,11 @@ void initWiFi() {
   else 
   {
     Serial.println();
-    Serial.print("connected ->");
+    Serial.println("WiFi Connected");
+    Serial.print("Station IP Address : ");
     Serial.println(WiFi.localIP());
+    Serial.print("Wi-Fi Channel : ");
+    Serial.println(WiFi.channel());
     showOLED_IP_Address();
     pickOneLED(0, 0,   0,   255, 50, 50);
     
@@ -116,7 +123,6 @@ void initWiFi() {
 
 void changeWiFi(){
   WiFi.disconnect();
-  WiFi.mode(WIFI_STA);
   blinkNeopixel(255, 255, 0, 2);
   WiFiManager wm;
   wm.resetSettings();
