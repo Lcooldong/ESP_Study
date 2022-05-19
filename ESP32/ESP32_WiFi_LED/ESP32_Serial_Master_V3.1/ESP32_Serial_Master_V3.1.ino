@@ -113,7 +113,17 @@ void loop() {
       Serial.write((char*)&serial_data, sizeof(serial_data));
       pickOneLED(0, serial_data.RED, serial_data.GREEN, serial_data.BLUE, serial_data.brightness, serial_data.wait);
       delay(50);
-  }   
+          
+      if(serial_data.led_number == 255) 
+      {
+          server.end();
+          pickOneLED(0, 255, 255, 255, 50, 50);
+          print_output("Reset WiFI");
+          changeWiFi();
+          server.begin();
+          ESP.restart();
+      }
+  }
 
   if( neopixel_Flag == 1 ){
     

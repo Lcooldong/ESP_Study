@@ -4,13 +4,13 @@
 // Tool -> Partition Scheme -> Minimal SPIFFS 
 
 unsigned long RESET_TIME = 1000*60*60*24; // 1 day
-volatile int count0;
-volatile int count1; 
+volatile int count0;  //extern OTA.cpp
+volatile int count1;  //extern OTA.cpp
 hw_timer_t * timer0 = NULL;
 hw_timer_t * timer1 = NULL;
-portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
+portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED; //extern OTA.cpp
 
-bool FORMAT_SPIFFS_IF_FAILED = true;    // 마운트 실패시 SPIFFS 파일 시스템 포맷
+bool FORMAT_SPIFFS_IF_FAILED = true;    // 마운트 실패시 SPIFFS 파일 시스템 포맷, extern OTA.cpp
 
 
 AsyncWebServer server(80);
@@ -37,7 +37,21 @@ void setup() {
 void loop() {
   reconnectWiFi(); 
 
+  // change wifi -> you can also use interrupt button.
+  if(Serial.available())
+  {
+    String ch = Serial.readStringUntil('\n');
+    if(ch == "reset") 
+    {
+      server.end();
+      changeWiFi();
+      server.begin();
+      ESP.restart();
+    }
+  }
 
+
+  
 }
 
 
