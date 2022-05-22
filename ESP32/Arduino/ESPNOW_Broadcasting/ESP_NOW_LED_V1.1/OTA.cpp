@@ -32,6 +32,7 @@ void initWiFi() {
   listDir("/");
   Wire.begin(23, 19); // SDA, SCL
   initOLED();
+  init_Neopixel(50);
   WiFi.mode(WIFI_AP_STA);
   WiFiManager wm;
   Serial.println("--------Saved Data--------");
@@ -107,6 +108,7 @@ void initWiFi() {
     Serial.print("connected ->");
     Serial.println(WiFi.localIP());
     showOLED_IP_Address();
+    blinkNeopixel(strip.Color(0, 255, 0), 5, 500);
     pickOneLED(0, strip.Color(0, 255, 0), 1, 50);
     
   }
@@ -123,8 +125,8 @@ void initWiFi() {
 }
 
 void changeWiFi(){
-  blinkNeopixel(strip.Color(255, 0, 0), 5, 500);
-  pickOneLED(0, strip.Color(255, 0, 0), 50, 50);
+//  blinkNeopixel(strip.Color(255, 0, 0), 5, 500);
+//  pickOneLED(0, strip.Color(255, 0, 0), 50, 50);
   WiFi.disconnect();
   WiFi.mode(WIFI_AP_STA);
   WiFiManager wm;
@@ -160,7 +162,7 @@ void changeWiFi(){
       saveConfig();
       showOLED_IP_Address();
       showOLED_WiFi(ssid, pass);
-      pickOneLED(0, strip.Color(0, 255, 0), 50, 1000);
+      pickOneLED(0, strip.Color(0, 255, 0), 50, 2000);
       pickOneLED(0, strip.Color(0, 0, 0), 0, 10);
 //      ESP.restart();
   }
@@ -194,7 +196,7 @@ void blinkTimer(uint32_t color){
     portENTER_CRITICAL(&timerMux); // 카운트 시작 
     count1--;                       // 트리거 시간 감소
     portEXIT_CRITICAL(&timerMux);  // 카운트 종료
-    Serial.println("Blink Timer");
+//    Serial.println("Blink Timer");
     if(neopixel_Flag == 1){
       Serial.print("Blink Status : ");
       Serial.println(blinkToggle);

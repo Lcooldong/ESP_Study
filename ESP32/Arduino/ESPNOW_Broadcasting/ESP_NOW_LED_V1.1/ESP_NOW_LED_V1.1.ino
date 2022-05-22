@@ -92,27 +92,36 @@ void setup() {
   esp_now_register_recv_cb(OnDataRecv);
 
   neopixel_Flag = 0;
-  init_Neopixel(50);
+  
   
   timer_init();
 
-  blinkNeopixel(strip.Color(0, 255, 0), 5, 500);
+  
 }
 
 void loop() {
   reconnectWiFi();
-//  blinkTimer(strip.Color(255, 0, 255));
+  blinkTimer(strip.Color(255, 0, 255));
+
+ 
+  
+  
   
   if(Serial.available()){
     char ch = Serial.read();
     if(ch == 'r')
-    {
-      neopixel_Flag = 1;    
+    {         
       server.end();
       Serial.println("Reset WiFi");  
       changeWiFi();
-      server.begin();
+      server.begin();      
+    }
+    
+    if(ch == '1'){
+      neopixel_Flag = 1; 
+    }else if(ch == '2'){
       neopixel_Flag = 0;
+      pickOneLED(0, strip.Color(0, 0, 0), 10, 1);
     }
 
     delay(10);
