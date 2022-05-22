@@ -1,7 +1,7 @@
 #include <esp_now.h>
 #include <WiFi.h>
 #include <esp_wifi.h> // esp_now.h  포함
-#include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
+//#include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 

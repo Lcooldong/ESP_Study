@@ -103,10 +103,6 @@ void loop() {
   reconnectWiFi();
   blinkTimer(strip.Color(255, 0, 255));
 
- 
-  
-  
-  
   if(Serial.available()){
     char ch = Serial.read();
     if(ch == 'r')
