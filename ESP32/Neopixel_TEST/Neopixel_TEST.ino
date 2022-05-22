@@ -73,7 +73,7 @@ void loop() {
   delay(500);
   pickOneLED(1, strip.Color(255, 0, 0), 50, 50);
   delay(500);
-  pickOneLED(3, strip.Color(255, 0, 0), 50, 50);
+  pickOneLED(3, strip.Color(0, 255, 0), 50, 50);
   delay(500);
   pickOneLED(4, strip.Color(0, 255, 0), 50, 50);
   delay(500);
