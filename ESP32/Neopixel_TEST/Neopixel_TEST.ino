@@ -23,7 +23,7 @@
 #define LED_COUNT 60
 
 // Declare our NeoPixel strip object:
-Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGBW + NEO_KHZ800);
 // Argument 1 = Number of pixels in NeoPixel strip
 // Argument 2 = Arduino pin number (most are valid)
 // Argument 3 = Pixel type flags, add together as needed:
@@ -53,34 +53,62 @@ void setup() {
 // loop() function -- runs repeatedly as long as board is on ---------------
 
 void loop() {
-  // Fill along the length of the strip in various colors...
-  pickOneLED(0, strip.Color(255, 0, 0), 50, 50);
-  delay(500);
-  pickOneLED(1, strip.Color(0, 0, 255), 50, 50);
-  delay(500);
-  pickOneLED(3, strip.Color(0, 255, 0), 50, 50);
-  delay(500);
-  pickOneLED(4, strip.Color(255, 0, 0), 50, 50);
-  delay(500);
-  pickOneLED(5, strip.Color(0, 0, 255), 50, 50);
-  delay(500);
-  pickOneLED(7, strip.Color(0, 255, 0), 50, 50);
-  delay(500);
 
 
-  // Fill along the length of the strip in various colors...
-  pickOneLED(0, strip.Color(0, 255, 0), 50, 50);
-  delay(500);
-  pickOneLED(1, strip.Color(255, 0, 0), 50, 50);
-  delay(500);
-  pickOneLED(3, strip.Color(0, 255, 0), 50, 50);
-  delay(500);
-  pickOneLED(4, strip.Color(0, 255, 0), 50, 50);
-  delay(500);
-  pickOneLED(5, strip.Color(255, 0, 0), 50, 50);
-  delay(500);
-  pickOneLED(7, strip.Color(0, 0, 255), 50, 50);
-  delay(500);
+//SK6812  -> 제품이 RGB, GRB, RGBW인지 확인해야함
+  colorWipe(strip.Color(255,   0,   0), 50); // Red
+  colorWipe(strip.Color(  0, 255,   0), 50); // Green
+  colorWipe(strip.Color(  0,   0, 255), 50); // Blue
+  
+  
+  // Red
+//  pickOneLED(0, strip.Color(255, 0, 0), 50, 50);
+//  delay(500);
+//  pickOneLED(1, strip.Color(0, 0, 255), 50, 50);
+//  delay(500);
+//  pickOneLED(3, strip.Color(0, 255, 0), 50, 50);
+//  delay(500);
+//  pickOneLED(4, strip.Color(255, 0, 0), 50, 50);
+//  delay(500);
+//  pickOneLED(5, strip.Color(0, 0, 255), 50, 50);
+//  delay(500);
+//  pickOneLED(7, strip.Color(0, 255, 0), 50, 50);
+//  delay(500);
+
+
+  // Green
+//  pickOneLED(0, strip.Color(0, 255, 0), 50, 50);
+//  delay(500);
+//  pickOneLED(1, strip.Color(255, 0, 0), 50, 50);
+//  delay(500);
+//  pickOneLED(2, strip.Color(0, 0, 255), 50, 50);
+//  delay(500);
+//  pickOneLED(4, strip.Color(0, 255, 0), 50, 50);
+//  delay(500);
+//  pickOneLED(5, strip.Color(255, 0, 0), 50, 50);
+//  delay(500);
+//  pickOneLED(6, strip.Color(0, 0, 255), 50, 50);
+//  delay(500);
+
+
+//  // Blue
+//  pickOneLED(0, strip.Color(0, 0, 255), 50, 50);
+//  delay(500);
+//  
+//  pickOneLED(1, strip.Color(0, 0, 0), 50, 50);
+//  delay(500);
+  
+//  pickOneLED(2, strip.Color(0, 0, 255), 50, 50);
+//  delay(500);
+//  
+//  pickOneLED(4, strip.Color(0, 0, 255), 50, 50);
+//  delay(500);
+//  
+//  pickOneLED(5, strip.Color(0, 255, 0), 50, 50);
+//  delay(500);
+//  
+//  pickOneLED(6, strip.Color(0, 255, 0), 50, 50);
+//  delay(500);
 
 //  pickOneLED(4, strip.Color(0, 0, 255), 50, 50);
 //  delay(1000);
