@@ -1,5 +1,5 @@
 #include <esp_now.h>
-#include <WiFi.h>
+#include "WiFi.h"
 #include <esp_wifi.h> // esp_now.h  포함
 //#include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 
@@ -39,12 +39,15 @@ PACKET sample_data2 = {0x10, 0, 0, 255, 10, 1, 20, 0};
 
 int neopixel_Flag = 0;
 int broadcast_Flag = 0;
+int compare_Flag = 0;
 int ESPNOW_Flag = 0;
-int newtwork = 0;
 char ssid[32] = {0,};
-int32_t channel = 0;
+int8_t channel[255] = {0, };
+int8_t temp_channel = 0;
 esp_now_peer_info_t peerInfo;
 
+char compare_esp[] = "ESP";
+char ssid_esp[3] = {0,};
 
 
 //constexpr char WIFI_SSID[] = "2KNG";
@@ -68,8 +71,8 @@ void setup() {
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
   delay(100);
+  Serial.println("Setup done");
 
-  // Init ESP-NOW
   if (esp_now_init() == ESP_OK) {
     // 0(ESP_OK) 일 때 시작
     Serial.println("ESP-NOW initialized");
@@ -78,66 +81,93 @@ void setup() {
     ESP.restart();
   }
 
-  do{
+  broadcast_Init();
+
+  
+  while (true){
     Serial.println("scan start");
 
     // WiFi.scanNetworks will return the number of networks found
-    newtwork = WiFi.scanNetworks();
+    int network = WiFi.scanNetworks();
     Serial.println("scan done");
-    if (newtwork == 0) {
-        Serial.println("no networks found");
-    } else {
-        Serial.print(newtwork);
-        Serial.println(" networks found");
-        for (int i = 0; i < newtwork; ++i) {
-            // Print SSID and RSSI for each network found
-            Serial.print(i + 1);
-            Serial.print(": ");
-            Serial.print(WiFi.SSID(i));
-            Serial.print(" (");           
-            Serial.print(WiFi.RSSI(i));
-            Serial.print(")");
-            
-            Serial.println((WiFi.encryptionType(i) == WIFI_AUTH_OPEN)?"_":"*");
-            
-            WiFi.SSID(i).toCharArray(ssid, sizeof(ssid));
-            channel = getWiFiChannel(ssid);
-            Serial.print("Channel : ");
-            Serial.println(channel);
-            delay(10);
-            
-       
-//            WiFi.printDiag(Serial); // Uncomment to verify channel number before
+    if (network == 0) 
+    {
+      Serial.println("no networks found");
+    } 
+    else 
+    {
+      Serial.print(network);
+      Serial.println(" networks found");
+      for (int i = 0; i < network; ++i) 
+      {   // 1번 부터
+          // Print SSID and RSSI for each network found
+          Serial.print(i + 1);
+          Serial.print(": ");
+          Serial.print(WiFi.SSID(i));
+          Serial.print(" (");           
+          Serial.print(WiFi.RSSI(i));
+          Serial.print(")");
+          
+          Serial.println((WiFi.encryptionType(i) == WIFI_AUTH_OPEN)?"_":"*");
 
-            esp_wifi_set_promiscuous(true);
-            esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE);
-            esp_wifi_set_promiscuous(false);
-            
-//            WiFi.printDiag(Serial); // Uncomment to verify channel change after
-            broadcast_Init();          
-            broadcast((uint8_t *) &sample_data1, sizeof(sample_data1));
-            delay(500);
-//            broadcast((uint8_t *) &sample_data2, sizeof(sample_data2));
-            if(broadcast_Flag == 1){
-              Serial.println("Complete Broadcast");
-              break;
-            }
-        }
-    }
+          delay(10);           
+       }                 
+    }     
     Serial.println("");
-    if((ESPNOW_Flag == 1) && (broadcast_Flag == 1)){
-      Serial.print("Broadcast Target Found : ");
-      Serial.println(ssid);
-      Serial.print("Channel connection : ");
-      Serial.println(channel);
       
-      break;    
+    for(int i=0; i < network; ++i)
+    {
+      WiFi.SSID(i).toCharArray(ssid, sizeof(ssid));   // 배열로
+
+      for(int j=0; j<3; j++)
+      {
+        ssid_esp[j] = ssid[j];
+      }
+      
+      if(!strcmp(compare_esp, ssid_esp))
+      {
+        compare_Flag = 1;
+
+        Serial.print("compare : ");
+        Serial.println(compare_esp);
+        Serial.print("ssid[3] : ");
+        Serial.println(ssid_esp);
+        Serial.print("FLAG : ");
+        
+        
+        channel[i] = getWiFiChannel(ssid);
+        Serial.print("Channel : ");
+        Serial.println(channel[i]);
+        temp_channel = channel[i];
+        break;
+      }
     }
-    // Wait a bit before scanning again
-    delay(2000);
-    broadcast_Flag = 0;
+
+    if(compare_Flag == 1)
+    {
+      esp_wifi_set_promiscuous(true);
+      esp_wifi_set_channel(temp_channel, WIFI_SECOND_CHAN_NONE);
+      esp_wifi_set_promiscuous(false);
+      broadcast((uint8_t *) &sample_data1, sizeof(sample_data1));
+      delay(500);
+        
+      if(broadcast_Flag == 1){
+        Serial.println("Complete Broadcast");
+        break;
+      }
+    }
     
-  }while(newtwork > 0);
+    // Wait a bit before scanning again
+    delay(3000);
+    broadcast_Flag = 0;
+    compare_Flag = 0;
+    
+  }
+
+   // Init ESP-NOW
+  
+
+  
   broadcast((uint8_t *) &sample_data2, sizeof(sample_data2));
   Serial.write("\r\nSetup_Done");
   
@@ -188,6 +218,40 @@ void broadcast_Init(){
 //    esp_now_register_recv_cb(OnDataRecv);
   }
 }
+
+
+void scan_WiFi(){
+  Serial.println("scan start");
+
+  // WiFi.scanNetworks will return the number of networks found
+  int network = WiFi.scanNetworks();
+  Serial.println("scan done");
+  if (network == 0) 
+  {
+      Serial.println("no networks found");
+  } 
+  else 
+  {
+      Serial.print(network);
+      Serial.println(" networks found");
+      for (int i = 0; i < network; ++i) 
+      {   // 1번 부터
+          // Print SSID and RSSI for each network found
+          Serial.print(i + 1);
+          Serial.print(": ");
+          Serial.print(WiFi.SSID(i));
+          Serial.print(" (");           
+          Serial.print(WiFi.RSSI(i));
+          Serial.print(")");
+          
+          Serial.println((WiFi.encryptionType(i) == WIFI_AUTH_OPEN)?"_":"*");
+
+          delay(10);           
+       }                 
+   }     
+   Serial.println("");
+}
+
 
 
 
