@@ -26,7 +26,7 @@ void init_Neopixel(uint8_t brightness){
   strip.setBrightness(brightness); // Set BRIGHTNESS to about 1/5 (max = 255)
 }
 
-void pickOneLED(uint8_t ledNum, uint32_t color, uint8_t brightness, uint8_t wait){
+void pickOneLED(uint8_t ledNum, uint32_t color, uint8_t brightness, int wait){
     strip.setBrightness(brightness);
     strip.setPixelColor(ledNum, color);  
     strip.show();                                               

@@ -156,6 +156,7 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   uint8_t waitORtimes = incomingReadings.wait;
   strip.setBrightness(_brightness);
   
+  // target_board_led >> 4
   if(device_id == (target_board_led / 16))
   {
     switch(incomingReadings.style)
