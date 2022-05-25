@@ -2,11 +2,11 @@
 #include "Arduino.h"
 
 #define LED_PIN 25
-#define LED_COUNT 6
+#define LED_COUNT 8
 
-
+//Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGBW + NEO_KHZ800);   // cube LED
 // strip.color (G, R, B)
-Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGBW + NEO_KHZ800);
+Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGB + NEO_KHZ800);    // circle 8, strip 8
 // Argument 1 = Number of pixels in NeoPixel strip
 // Argument 2 = Arduino pin number (most are valid)
 // Argument 3 = Pixel type flags, add together as needed:

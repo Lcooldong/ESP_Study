@@ -23,7 +23,7 @@
 #define LED_COUNT 8
 
 // Declare our NeoPixel strip object:
-Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGB + NEO_KHZ800);
 // Argument 1 = Number of pixels in NeoPixel strip
 // Argument 2 = Arduino pin number (most are valid)
 // Argument 3 = Pixel type flags, add together as needed:
@@ -87,7 +87,10 @@ void loop() {
   
   if(currentMillis - pixelPrevious >= pixelInterval) {        //  Check for expired time
     pixelPrevious = currentMillis;                            //  Run current frame
-    rainbow(1);
+//    rainbow(10);
+    colorWipe(strip.Color(0, 0, 255), 50);
+//    colorWipe(strip.Color(0, 255, 0), 50);
+//    colorWipe(strip.Color(255, 0, 0), 50);
 
     
 //    switch (patternCurrent) {
