@@ -9,8 +9,8 @@
 //Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGBW + NEO_KHZ800);   // cube LED
 
 
-//#define LED_COUNT 8
-//Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGB + NEO_KHZ800);    // circle 8, strip 8
+#define LED_COUNT 8
+Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);    // circle 8, strip 8
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Argument 1 = Number of pixels in NeoPixel strip

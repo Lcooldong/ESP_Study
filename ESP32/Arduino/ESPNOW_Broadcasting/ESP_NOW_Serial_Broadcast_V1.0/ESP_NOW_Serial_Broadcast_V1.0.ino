@@ -35,7 +35,7 @@ typedef enum {
 PACKET serial_data = {0, };
 PACKET incomingReadings;
 PACKET sample_data1 = {0x10, 255, 0, 0, 10, 1, 20, 0};
-PACKET sample_data2 = {0x10, 0, 0, 255, 10, 1, 20, 0};
+PACKET sample_data2 = {0x10, 0, 0, 255, 0, 1, 20, 0};
 
 int neopixel_Flag = 0;
 int broadcast_Flag = 0;

@@ -47,7 +47,7 @@ bool FORMAT_SPIFFS_IF_FAILED = true;
 AsyncWebServer server(80);
 
 //////////////////////////////////////////////////////////
-int device_id = 1;    // check
+int device_id = 5;    // check
 /////////////////////////////////////////////////////////
 
 void setup() {
@@ -157,16 +157,16 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   strip.setBrightness(_brightness);
   
   // target_board_led >> 4
-  if(device_id == (target_board_led / 16))
+  if(device_id == (target_board_led >> 4))
   {
     switch(incomingReadings.style)
     {
       case oneColor:
-        pickOneLED(target_board_led%16, strip.Color(G, R, B), _brightness, waitORtimes);
+        pickOneLED(target_board_led%16, strip.Color(R, G, B), _brightness, waitORtimes);
         break;
         
       case CHASE:
-        theaterChase(strip.Color(G, R, B), waitORtimes);
+        theaterChase(strip.Color(R, G, B), waitORtimes);
         resetNeopixel();
         break;
         
@@ -176,7 +176,7 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
         break;
         
       case COLORWIPE:
-        colorWipe(strip.Color(G, R, B), waitORtimes * 10);
+        colorWipe(strip.Color(R, G, B), waitORtimes * 10);
         break;
       case CHASE_RAINBOW:
         theaterChaseRainbow(waitORtimes);

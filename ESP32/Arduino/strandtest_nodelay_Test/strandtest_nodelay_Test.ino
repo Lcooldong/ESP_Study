@@ -20,10 +20,10 @@
 #define LED_PIN    25
 
 // How many NeoPixels are attached to the Arduino?
-#define LED_COUNT 8
+#define LED_COUNT 6
 
 // Declare our NeoPixel strip object:
-Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGB + NEO_KHZ800);
+Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRBW + NEO_KHZ800);
 // Argument 1 = Number of pixels in NeoPixel strip
 // Argument 2 = Arduino pin number (most are valid)
 // Argument 3 = Pixel type flags, add together as needed:
@@ -88,37 +88,33 @@ void loop() {
   if(currentMillis - pixelPrevious >= pixelInterval) {        //  Check for expired time
     pixelPrevious = currentMillis;                            //  Run current frame
 //    rainbow(10);
-    colorWipe(strip.Color(0, 0, 255), 50);
-//    colorWipe(strip.Color(0, 255, 0), 50);
-//    colorWipe(strip.Color(255, 0, 0), 50);
 
-    
-//    switch (patternCurrent) {
-//      case 7:
-//        theaterChaseRainbow(50); // Rainbow-enhanced theaterChase variant
-//        break;
-//      case 6:
-//        rainbow(10); // Flowing rainbow cycle along the whole strip
-//        break;     
-//      case 5:
-//        theaterChase(strip.Color(0, 0, 127), 50); // Blue
-//        break;
-//      case 4:
-//        theaterChase(strip.Color(127, 0, 0), 50); // Red
-//        break;
-//      case 3:
-//        theaterChase(strip.Color(127, 127, 127), 50); // White
-//        break;
-//      case 2:
-//        colorWipe(strip.Color(0, 0, 255), 50); // Blue
-//        break;
-//      case 1:
-//        colorWipe(strip.Color(0, 255, 0), 50); // Green
-//        break;        
-//      default:
-//        colorWipe(strip.Color(255, 0, 0), 50); // Red
-//        break;
-//    }
+    switch (patternCurrent) {
+      case 7:
+        theaterChaseRainbow(50); // Rainbow-enhanced theaterChase variant
+        break;
+      case 6:
+        rainbow(10); // Flowing rainbow cycle along the whole strip
+        break;     
+      case 5:
+        theaterChase(strip.Color(0, 0, 127), 50); // Blue
+        break;
+      case 4:
+        theaterChase(strip.Color(127, 0, 0), 50); // Red
+        break;
+      case 3:
+        theaterChase(strip.Color(127, 127, 127), 50); // White
+        break;
+      case 2:
+        colorWipe(strip.Color(0, 0, 255), 50); // Blue
+        break;
+      case 1:
+        colorWipe(strip.Color(0, 255, 0), 50); // Green
+        break;        
+      default:
+        colorWipe(strip.Color(255, 0, 0), 50); // Red
+        break;
+    }
   }
 }
 

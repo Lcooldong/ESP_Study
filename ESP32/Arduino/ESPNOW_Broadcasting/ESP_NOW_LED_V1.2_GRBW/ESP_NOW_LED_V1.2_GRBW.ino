@@ -162,11 +162,11 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
     switch(incomingReadings.style)
     {
       case oneColor:
-        pickOneLED(target_board_led%16, strip.Color(G, R, B), _brightness, waitORtimes);
+        pickOneLED(target_board_led%16, strip.Color(R, G, B), _brightness, waitORtimes);
         break;
         
       case CHASE:
-        theaterChase(strip.Color(G, R, B), waitORtimes);
+        theaterChase(strip.Color(R, G, B), waitORtimes);
         resetNeopixel();
         break;
         
@@ -176,7 +176,7 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
         break;
         
       case COLORWIPE:
-        colorWipe(strip.Color(G, R, B), waitORtimes * 10);
+        colorWipe(strip.Color(R, G, B), waitORtimes * 10);
         break;
       case CHASE_RAINBOW:
         theaterChaseRainbow(waitORtimes);
