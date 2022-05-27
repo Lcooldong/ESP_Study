@@ -64,14 +64,15 @@ void setup() {
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop() {
 //  rainbow(10);
-//  gauge_rainbow_Wipe2(1, 1);
+//  gauge_rainbow_Wipe2(5, 1);
+  gauge_rainbow_Wipe(36, 1);
   unsigned long currentMillis = millis();                     //  Update current time
-  if((currentMillis - patternPrevious) >= patternInterval) {  //  Check for expired time
-    patternPrevious = currentMillis;
-    patternCurrent++;                                         //  Advance to next pattern
-    if(patternCurrent >= 7)
-      patternCurrent = 0;
-  }
+//  if((currentMillis - patternPrevious) >= patternInterval) {  //  Check for expired time
+//    patternPrevious = currentMillis;
+//    patternCurrent++;                                         //  Advance to next pattern
+//    if(patternCurrent >= 7)
+//      patternCurrent = 0;
+//  }
 //
 //  
 //  
@@ -79,7 +80,7 @@ void loop() {
     pixelPrevious = currentMillis;                            //  Run current frame
 //    rainbow(1);
 //    colorWipe(strip.Color(0, 0, 255), 1); // Blue
-    gauge_rainbow_Wipe2(1, 1);
+//    gauge_rainbow_Wipe2(1, 1);
 //    rainbow_delay(1);
 //    gauge_Wipe(strip.Color(255, 43, 123), 1);
 //    switch (patternCurrent) {
@@ -124,56 +125,38 @@ void gauge_rainbow_Wipe2(int cycle_speed , int wait){
     pixelInterval = wait;
     
   randNumber = random(0, LED_COUNT); // 끝 제외  144개 0~143
-
-  for(uint16_t j = 0; j < LED_COUNT; j++) {
-    strip.setPixelColor(j, Wheel((j + pixelCycle) & 255)); //  Update delay time
-    strip.espShow();
+  for(uint16_t i=0; i < pixelNumber; i++) {
+    strip.setPixelColor(i, Wheel((i + pixelCycle) & 255)); //  Update delay time  
+    strip.setPixelColor(randNumber + i, strip.Color(0, 0, 0));
+    strip.show();
   }
-
-  for(int i = LED_COUNT; i >=randNumber; i-- ){
-      strip.setPixelColor(i, strip.Color(0, 0, 0));
-      strip.espShow();
-  }
-
-  
-//  if(pixelCurrent > randNumber){
-//    for(int i = LED_COUNT; i >=randNumber; i-- ){
-//      strip.setPixelColor(i, strip.Color(0, 0, 0));
-//       
-//    }
-//  }else{
-//    for(uint16_t j = 0; j < pixelCurrent; j++) {
-//        strip.setPixelColor(j, Wheel((j + pixelCycle) & 255)); //  Update delay time 
-//    }
-//  }
-//  strip.show();
-//  delay(50);
-  
-
-  
-//  if(pixelCurrent > randNumber){
-//    for(int i = pixelCurrent; i >=randNumber; i-- ){
-//      strip.setPixelColor(randNumber - i, strip.Color(0, 0, 0));
-//      
-//    }
-//  }else{
-//    for(uint16_t j = 0; j < pixelCurrent; j++) {
-//        strip.setPixelColor(j, Wheel((j + pixelCycle) & 255)); //  Update delay time 
-//        strip.show();
-//    }
-//  }
   
   
   pixelCurrent = randNumber;
   pixelCycle = pixelCycle + cycle_speed;
-  pixelQueue++;
+  pixelQueue = LED_COUNT - pixelCurrent;
   if(pixelCycle >= 256)
-    pixelCycle = 0;                             
+    pixelCycle = 0;
   if(pixelQueue >= LED_COUNT)
-    pixelQueue = 0;    
+    pixelQueue = 0;
   
 }
 
+
+void sparkle(int cycle_speed , int wait){
+  if(pixelInterval != wait)
+    pixelInterval = wait;
+    
+  randNumber = random(0, LED_COUNT); // 끝 제외  144개 0~143
+
+  strip.setPixelColor(pixelCurrent, Wheel((pixelCurrent + pixelCycle) & 255)); //  Update delay time
+  strip.show();
+  
+  pixelCurrent = randNumber;
+  pixelCycle = pixelCycle + cycle_speed;
+  if(pixelCycle >= 256)
+    pixelCycle = 0;                             
+}
 
 void gauge_rainbow_Wipe(int cycle_speed , int wait){
   if(pixelInterval != wait)
