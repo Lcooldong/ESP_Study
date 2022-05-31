@@ -47,7 +47,7 @@ int8_t temp_channel = 0;
 esp_now_peer_info_t peerInfo;
 
 char compare_esp[] = "ESP";
-char compare_Remote[] = "Remote"
+char compare_Remote[] = "Remote";
 char ssid_esp[3] = {0,};
 char ssid_Remote[6] = {0,};
 
@@ -121,9 +121,14 @@ void setup() {
     {
       WiFi.SSID(i).toCharArray(ssid, sizeof(ssid));   // 배열로
 
-      for(int j=0; j<3; j++)
+      for(int j=0; j < sizeof(ssid_esp); j++)
       {
         ssid_esp[j] = ssid[j];
+      }
+
+      for(int k=0; k < sizeof(ssid_Remote); k++)
+      {
+        ssid_Remote[k] = ssid[k];
       }
       
       if(!strcmp(compare_esp, ssid_esp))
@@ -143,6 +148,24 @@ void setup() {
         temp_channel = channel[i];
         break;
       }
+      else if(!strcmp(compare_Remote, ssid_Remote))
+      {
+        compare_Flag = 1;
+
+        Serial.print("compare : ");
+        Serial.println(compare_Remote);
+        Serial.print("ssid[6] : ");
+        Serial.println(ssid_Remote);
+        Serial.print("FLAG : ");
+        
+        
+        channel[i] = getWiFiChannel(ssid);
+        Serial.print("Channel : ");
+        Serial.println(channel[i]);
+        temp_channel = channel[i];
+        break;
+      }
+      
     }
 
     if(compare_Flag == 1)
