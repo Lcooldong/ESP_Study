@@ -203,7 +203,7 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
 }
 
 void resetNeopixel(){
-  for(int i=0; i < 6; i++){
+  for(int i=0; i < 256; i++){
     pickOneLED(i, strip.Color(0, 0, 0), 0, 0 );
   } 
 }
