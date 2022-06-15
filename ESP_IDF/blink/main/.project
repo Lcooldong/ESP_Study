@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>ESP_NOW_Example</name>
+	<name>main</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -15,6 +15,6 @@
 	<natures>
 		<nature>org.eclipse.cdt.core.cnature</nature>
 		<nature>org.eclipse.cdt.core.ccnature</nature>
-		<nature>com.espressif.idf.core.idfNature</nature>
+		<nature>org.eclipse.cdt.cmake.core.cmakeNature</nature>
 	</natures>
 </projectDescription>
