@@ -1,0 +1,13 @@
+# Target labels
+ bootloader
+# Source files and their labels
+D:/Github/ESP/ESP_IDF/ESP_NOW_Example/build/CMakeFiles/bootloader
+D:/Github/ESP/ESP_IDF/ESP_NOW_Example/build/CMakeFiles/bootloader.rule
+D:/Github/ESP/ESP_IDF/ESP_NOW_Example/build/CMakeFiles/bootloader-complete.rule
+D:/Github/ESP/ESP_IDF/ESP_NOW_Example/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
+D:/Github/ESP/ESP_IDF/ESP_NOW_Example/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
+D:/Github/ESP/ESP_IDF/ESP_NOW_Example/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
+D:/Github/ESP/ESP_IDF/ESP_NOW_Example/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule
+D:/Github/ESP/ESP_IDF/ESP_NOW_Example/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
+D:/Github/ESP/ESP_IDF/ESP_NOW_Example/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
+D:/Github/ESP/ESP_IDF/ESP_NOW_Example/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
