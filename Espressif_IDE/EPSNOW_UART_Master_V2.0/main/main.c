@@ -48,6 +48,7 @@ void my_data_populate(my_data_t *data)
 static esp_err_t uart_espnow(void *arg)
 {
     static const char *RX_TASK_TAG = "RX_TASK";
+    static const char *ESP_TASK_TAG = "ESP_TASK";
     esp_log_level_set(RX_TASK_TAG, ESP_LOG_INFO);
     uint8_t* uart_data = (uint8_t*) malloc(RX_BUF_SIZE+1);
     static my_data_t data;
@@ -64,7 +65,7 @@ static esp_err_t uart_espnow(void *arg)
 		    {
 			  gpio_set_level(BLINK_GPIO, 1);
 //			  my_data_t *send_param = (my_data_t *)arg;
-
+			  ESP_LOGI(ESP_TASK_TAG, "ESPNOW_Send");
 			  esp_err_t err = esp_now_send(data.mac_addr, (uint8_t*)&data, sizeof(data));
 			  if (err != ESP_OK) {
 				  ESP_LOGE(TAG, "Send error");
@@ -104,7 +105,7 @@ void app_main(void)
     espnow_init();
 
 
-
+    // if you got warning in first value -> (void *)
     xTaskCreate(uart_espnow, "uart_rx_task", 1024*2, NULL, configMAX_PRIORITIES, NULL);		// higher priority
 //	xTaskCreate(tx_task, "uart_tx_task", 1024*2, NULL, configMAX_PRIORITIES-1, NULL);
 }
