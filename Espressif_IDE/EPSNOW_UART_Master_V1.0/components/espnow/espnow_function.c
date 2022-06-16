@@ -1,56 +1,139 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <freertos/FreeRTOS.h>
-#include "freertos/timers.h"
-#include <freertos/task.h>
-#include "freertos/event_groups.h"
-#include <driver/gpio.h>
-#include <driver/uart.h>
+/*
+ * espnow_function.c
+ *
+ *  Created on: 2022. 6. 16.
+ *      Author: s_coo
+ */
 
-#include "nvs_flash.h"
+#include "espnow_function.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
+#include "esp_log.h"
+#include "esp_crc.h"
+#include "esp_wifi.h"
 #include "esp_event.h"
 #include "esp_netif.h"
-#include "esp_wifi.h"
-#include "esp_log.h"
-#include "esp_system.h"
-#include "esp_now.h"
-#include "esp_sleep.h"
-#include "esp_crc.h"
 
-#include "sdkconfig.h"
-#include "espnow_basic_config.h"
+extern uint8_t s_broadcast_mac[ESP_NOW_ETH_ALEN];
+extern const char *TAG;
 
+xQueueHandle s_espnow_queue;
+uint16_t s_espnow_seq[ESPNOW_DATA_MAX] = { 0, 0 };
 
-#define ESPNOW_MAXDELAY 512
-
-static const char *TAG = "espnow_master";
-static xQueueHandle s_espnow_queue;
-static uint16_t s_espnow_seq[ESPNOW_DATA_MAX] = { 0, 0 };
-
-
-static void espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status)
+/* WiFi should start before using ESPNOW */
+void wifi_init(void)
 {
-	espnow_event_t evt;
-	espnow_event_send_cb_t *send_cb = &evt.info.send_cb;
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
+    ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
+    ESP_ERROR_CHECK( esp_wifi_set_mode(ESPNOW_WIFI_MODE) );
+    ESP_ERROR_CHECK( esp_wifi_start());
 
-	if (mac_addr == NULL) {
-	        ESP_LOGE(TAG, "Send cb arg error");
-	        return;
-	}
+#if CONFIG_ESPNOW_ENABLE_LONG_RANGE
+    ESP_ERROR_CHECK( esp_wifi_set_protocol(ESPNOW_WIFI_IF, WIFI_PROTOCOL_11B|WIFI_PROTOCOL_11G|WIFI_PROTOCOL_11N|WIFI_PROTOCOL_LR) );
+#endif
+}
 
-	evt.id = ESPNOW_SEND_CB;
-	memcpy(send_cb->mac_addr, mac_addr, ESP_NOW_ETH_ALEN);
-	send_cb->status = status;
-	if (xQueueSend(s_espnow_queue, &evt, ESPNOW_MAXDELAY) != pdTRUE) {
-		ESP_LOGW(TAG, "Send send queue fail");
-	}
+esp_err_t espnow_init(void)
+{
+    espnow_send_param_t *send_param;
 
+    s_espnow_queue = xQueueCreate(ESPNOW_QUEUE_SIZE, sizeof(espnow_event_t));
+    if (s_espnow_queue == NULL) {
+        ESP_LOGE(TAG, "Create mutex fail");
+        return ESP_FAIL;
+    }
 
+    /* Initialize ESPNOW and register sending and receiving callback function. */
+    ESP_ERROR_CHECK( esp_now_init() );
+    ESP_ERROR_CHECK( esp_now_register_send_cb(espnow_send_cb) );
+    ESP_ERROR_CHECK( esp_now_register_recv_cb(espnow_recv_cb) );
+
+    /* Set primary master key. */
+    ESP_ERROR_CHECK( esp_now_set_pmk((uint8_t *)CONFIG_ESPNOW_PMK) );
+
+    /* Add broadcast peer information to peer list. */
+    esp_now_peer_info_t *peer = malloc(sizeof(esp_now_peer_info_t));
+    if (peer == NULL) {
+        ESP_LOGE(TAG, "Malloc peer information fail");
+        vSemaphoreDelete(s_espnow_queue);
+        esp_now_deinit();
+        return ESP_FAIL;
+    }
+    memset(peer, 0, sizeof(esp_now_peer_info_t));
+    peer->channel = CONFIG_ESPNOW_CHANNEL;
+    peer->ifidx = ESPNOW_WIFI_IF;
+    peer->encrypt = false;
+    memcpy(peer->peer_addr, s_broadcast_mac, ESP_NOW_ETH_ALEN);
+    ESP_ERROR_CHECK( esp_now_add_peer(peer) );
+    free(peer);
+
+    /* Initialize sending parameters. */
+    send_param = malloc(sizeof(espnow_send_param_t));
+    memset(send_param, 0, sizeof(espnow_send_param_t));
+    if (send_param == NULL) {
+        ESP_LOGE(TAG, "Malloc send parameter fail");
+        vSemaphoreDelete(s_espnow_queue);
+        esp_now_deinit();
+        return ESP_FAIL;
+    }
+    send_param->unicast = false;
+    send_param->broadcast = true;
+    send_param->state = 0;
+    send_param->magic = esp_random();
+    send_param->count = CONFIG_ESPNOW_SEND_COUNT;
+    send_param->delay = CONFIG_ESPNOW_SEND_DELAY;
+    send_param->len = CONFIG_ESPNOW_SEND_LEN;
+    send_param->buffer = malloc(CONFIG_ESPNOW_SEND_LEN);
+    if (send_param->buffer == NULL) {
+        ESP_LOGE(TAG, "Malloc send buffer fail");
+        free(send_param);
+        vSemaphoreDelete(s_espnow_queue);
+        esp_now_deinit();
+        return ESP_FAIL;
+    }
+    memcpy(send_param->dest_mac, s_broadcast_mac, ESP_NOW_ETH_ALEN);
+    espnow_data_prepare(send_param);
+
+    xTaskCreate(espnow_task, "espnow_task", 2048, send_param, 4, NULL);
+
+    return ESP_OK;
+}
+
+void espnow_deinit(espnow_send_param_t *send_param)
+{
+    free(send_param->buffer);
+    free(send_param);
+    vSemaphoreDelete(s_espnow_queue);
+    esp_now_deinit();
 }
 
 
-static void espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
+
+
+
+void espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status)
+{
+    espnow_event_t evt;
+    espnow_event_send_cb_t *send_cb = &evt.info.send_cb;
+
+    if (mac_addr == NULL) {
+        ESP_LOGE(TAG, "Send cb arg error");
+        return;
+    }
+
+    evt.id = ESPNOW_SEND_CB;
+    memcpy(send_cb->mac_addr, mac_addr, ESP_NOW_ETH_ALEN);
+    send_cb->status = status;
+    if (xQueueSend(s_espnow_queue, &evt, ESPNOW_MAXDELAY) != pdTRUE) {
+        ESP_LOGW(TAG, "Send send queue fail");
+    }
+}
+
+void espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 {
     espnow_event_t evt;
     espnow_event_recv_cb_t *recv_cb = &evt.info.recv_cb;
@@ -117,7 +200,7 @@ void espnow_data_prepare(espnow_send_param_t *send_param)
     buf->crc = esp_crc16_le(UINT16_MAX, (uint8_t const *)buf, send_param->len);
 }
 
-static void espnow_task(void *pvParameter)
+void espnow_task(void *pvParameter)
 {
     espnow_event_t evt;
     uint8_t recv_state = 0;
@@ -255,114 +338,5 @@ static void espnow_task(void *pvParameter)
     }
 }
 
-static esp_err_t espnow_init(void)
-{
-    espnow_send_param_t *send_param;
 
-    s_espnow_queue = xQueueCreate(ESPNOW_QUEUE_SIZE, sizeof(espnow_event_t));
-    if (s_espnow_queue == NULL) {
-        ESP_LOGE(TAG, "Create mutex fail");
-        return ESP_FAIL;
-    }
-
-    /* Initialize ESPNOW and register sending and receiving callback function. */
-    ESP_ERROR_CHECK( esp_now_init() );
-    ESP_ERROR_CHECK( esp_now_register_send_cb(espnow_send_cb) );
-    ESP_ERROR_CHECK( esp_now_register_recv_cb(espnow_recv_cb) );
-
-    /* Set primary master key. */
-    ESP_ERROR_CHECK( esp_now_set_pmk((uint8_t *)CONFIG_ESPNOW_PMK) );
-
-    /* Add broadcast peer information to peer list. */
-    esp_now_peer_info_t *peer = malloc(sizeof(esp_now_peer_info_t));
-    if (peer == NULL) {
-        ESP_LOGE(TAG, "Malloc peer information fail");
-        vSemaphoreDelete(s_espnow_queue);
-        esp_now_deinit();
-        return ESP_FAIL;
-    }
-    memset(peer, 0, sizeof(esp_now_peer_info_t));
-    peer->channel = CONFIG_ESPNOW_CHANNEL;
-    peer->ifidx = ESPNOW_WIFI_IF;
-    peer->encrypt = false;
-    memcpy(peer->peer_addr, s_broadcast_mac, ESP_NOW_ETH_ALEN);
-    ESP_ERROR_CHECK( esp_now_add_peer(peer) );
-    free(peer);
-
-    /* Initialize sending parameters. */
-    send_param = malloc(sizeof(espnow_send_param_t));
-    memset(send_param, 0, sizeof(espnow_send_param_t));
-    if (send_param == NULL) {
-        ESP_LOGE(TAG, "Malloc send parameter fail");
-        vSemaphoreDelete(s_espnow_queue);
-        esp_now_deinit();
-        return ESP_FAIL;
-    }
-    send_param->unicast = false;
-    send_param->broadcast = true;
-    send_param->state = 0;
-    send_param->magic = esp_random();
-    send_param->count = CONFIG_ESPNOW_SEND_COUNT;
-    send_param->delay = CONFIG_ESPNOW_SEND_DELAY;
-    send_param->len = CONFIG_ESPNOW_SEND_LEN;
-    send_param->buffer = malloc(CONFIG_ESPNOW_SEND_LEN);
-    if (send_param->buffer == NULL) {
-        ESP_LOGE(TAG, "Malloc send buffer fail");
-        free(send_param);
-        vSemaphoreDelete(s_espnow_queue);
-        esp_now_deinit();
-        return ESP_FAIL;
-    }
-    memcpy(send_param->dest_mac, s_broadcast_mac, ESP_NOW_ETH_ALEN);
-    espnow_data_prepare(send_param);
-
-    xTaskCreate(espnow_task, "espnow_task", 2048, send_param, 4, NULL);
-
-    return ESP_OK;
-}
-
-static void espnow_deinit(espnow_send_param_t *send_param)
-{
-    free(send_param->buffer);
-    free(send_param);
-    vSemaphoreDelete(s_espnow_queue);
-    esp_now_deinit();
-}
-
-
-
-esp_err_t event_handler(void *ctx, system_event_t *event)
-{
-    return ESP_OK;
-}
-
-
-void app_main(void)
-{
-    nvs_flash_init();
-    tcpip_adapter_init();
-    ESP_ERROR_CHECK( esp_event_loop_init(event_handler, NULL) );
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
-    ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
-    ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
-    wifi_config_t sta_config = {
-        .sta = {
-            .ssid = CONFIG_ESP_WIFI_SSID,
-            .password = CONFIG_ESP_WIFI_PASSWORD,
-            .bssid_set = false
-        }
-    };
-    ESP_ERROR_CHECK( esp_wifi_set_config(WIFI_IF_STA, &sta_config) );
-    ESP_ERROR_CHECK( esp_wifi_start() );
-    ESP_ERROR_CHECK( esp_wifi_connect() );
-
-    gpio_set_direction(GPIO_NUM_4, GPIO_MODE_OUTPUT);
-    int level = 0;
-    while (true) {
-        gpio_set_level(GPIO_NUM_4, level);
-        level = !level;
-        vTaskDelay(300 / portTICK_PERIOD_MS);
-    }
-}
 

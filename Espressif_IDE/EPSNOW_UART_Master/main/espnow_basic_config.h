@@ -1,15 +1,14 @@
-/*
- * espnow_basic_config.h
- *
- *  Created on: 2022. 6. 16.
- *      Author: s_coo
- */
+/* ESPNOW Example
 
-#ifndef MAIN_ESPNOW_BASIC_CONFIG_H_
-#define MAIN_ESPNOW_BASIC_CONFIG_H_
+   This example code is in the Public Domain (or CC0 licensed, at your option.)
 
-#include "esp_now.h"
+   Unless required by applicable law or agreed to in writing, this
+   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+   CONDITIONS OF ANY KIND, either express or implied.
+*/
 
+#ifndef ESPNOW_H
+#define ESPNOW_H
 
 /* ESPNOW can work in both station and softap mode. It is configured in menuconfig. */
 #if CONFIG_ESPNOW_WIFI_MODE_STATION
@@ -21,8 +20,8 @@
 #endif
 
 #define ESPNOW_QUEUE_SIZE           6
+
 #define IS_BROADCAST_ADDR(addr) (memcmp(addr, s_broadcast_mac, ESP_NOW_ETH_ALEN) == 0)
-uint8_t s_broadcast_mac[ESP_NOW_ETH_ALEN] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
 typedef enum {
     ESPNOW_SEND_CB,
@@ -80,13 +79,4 @@ typedef struct {
     uint8_t dest_mac[ESP_NOW_ETH_ALEN];   //MAC address of destination device.
 } espnow_send_param_t;
 
-
-typedef struct __attribute__((packed)) {
-    uint8_t mac_address[6];		// 6 bytes
-    bool button_pushed;
-} my_data_t;
-
-
-
-
-#endif /* MAIN_ESPNOW_BASIC_CONFIG_H_ */
+#endif
