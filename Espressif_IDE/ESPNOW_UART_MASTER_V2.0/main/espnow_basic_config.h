@@ -1,16 +1,14 @@
 /*
- * espnow_function.h
+ * espnow_basic_config.h
  *
- *  Created on: 2022. 6. 16.
- *      Author: s_coo
+ *  Created on: 2022. 6. 26.
+ *      Author: user
  */
 
-#ifndef COMPONENTS_ESPNOW_INCLUDE_ESPNOW_FUNCTION_H_
-#define COMPONENTS_ESPNOW_INCLUDE_ESPNOW_FUNCTION_H_
+#ifndef MAIN_ESPNOW_BASIC_CONFIG_H_
+#define MAIN_ESPNOW_BASIC_CONFIG_H_
 
 
-#include "esp_now.h"
-#include "string.h"
 
 /* ESPNOW can work in both station and softap mode. It is configured in menuconfig. */
 #if CONFIG_ESPNOW_WIFI_MODE_STATION
@@ -21,10 +19,21 @@
 #define ESPNOW_WIFI_IF   ESP_IF_WIFI_AP
 #endif
 
+#define ESPNOW_QUEUE_SIZE   6
 #define ESPNOW_MAXDELAY 	512
-#define ESPNOW_QUEUE_SIZE 	6
-
 #define IS_BROADCAST_ADDR(addr) (memcmp(addr, s_broadcast_mac, ESP_NOW_ETH_ALEN) == 0)
+
+
+#define MY_RECEIVER_MAC 	{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}
+#define MY_ESPNOW_PMK 		"pmk1234567890123"
+#define MY_ESPNOW_CHANNEL 	1
+#define MY_ESPNOW_WIFI_IF 	ESP_IF_WIFI_STA
+#define MY_ESPNOW_WIFI_MODE WIFI_MODE_STA
+
+#include "sdkconfig.h"
+#include "esp_now.h"
+
+// Struct and Enum
 
 typedef enum {
     ESPNOW_SEND_CB,
@@ -83,25 +92,20 @@ typedef struct {
 } espnow_send_param_t;
 
 
-typedef struct __attribute__((packed)){
-	uint8_t mac_addr[6];
-	bool button_pushed;
-} my_data_t;
 
-
-
-// functions
-
+//function
 void wifi_init(void);
 esp_err_t espnow_init(void);
+esp_err_t broadcast_init(espnow_send_param_t *target_param);
 void espnow_deinit(espnow_send_param_t *send_param);
 void espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status);
 void espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len);
-
 int espnow_data_parse(uint8_t *data, uint16_t data_len, uint8_t *state, uint16_t *seq, int *magic);
 void espnow_data_prepare(espnow_send_param_t *send_param);
 void espnow_task(void *pvParameter);
 
 
 
-#endif /* COMPONENTS_ESPNOW_INCLUDE_ESPNOW_FUNCTION_H_ */
+
+
+#endif /* MAIN_ESPNOW_BASIC_CONFIG_H_ */

@@ -1,26 +1,39 @@
 /*
  * espnow_function.c
  *
- *  Created on: 2022. 6. 16.
- *      Author: s_coo
+ *  Created on: 2022. 6. 26.
+ *      Author: user
  */
 
-#include "espnow_function.h"
+
+#include <stdlib.h>
+#include <time.h>
+#include <string.h>
+#include <assert.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
-#include "freertos/task.h"
-#include "esp_log.h"
-#include "esp_crc.h"
-#include "esp_wifi.h"
+#include "freertos/timers.h"
+#include "nvs_flash.h"
 #include "esp_event.h"
 #include "esp_netif.h"
+#include "esp_wifi.h"
+#include "esp_log.h"
+#include "esp_system.h"
+#include "esp_now.h"
+#include "esp_crc.h"
 
+#include "freertos/task.h"
+#include "espnow_basic_config.h"
 
-extern uint8_t s_broadcast_mac[ESP_NOW_ETH_ALEN];
 extern const char *TAG;
+extern xQueueHandle s_espnow_queue;
+extern uint8_t s_broadcast_mac[ESP_NOW_ETH_ALEN];
+extern uint16_t s_espnow_seq[ESPNOW_DATA_MAX];
 
-xQueueHandle s_espnow_queue;
-uint16_t s_espnow_seq[ESPNOW_DATA_MAX] = { 0, 0 };
+
+
+
+//EventGroupHandle_t s_evt_group;
 
 /* WiFi should start before using ESPNOW */
 void wifi_init(void)
@@ -40,7 +53,6 @@ void wifi_init(void)
 
 esp_err_t espnow_init(void)
 {
-    espnow_send_param_t *send_param;
 
     s_espnow_queue = xQueueCreate(ESPNOW_QUEUE_SIZE, sizeof(espnow_event_t));
     if (s_espnow_queue == NULL) {
@@ -72,36 +84,46 @@ esp_err_t espnow_init(void)
     ESP_ERROR_CHECK( esp_now_add_peer(peer) );
     free(peer);
 
-    /* Initialize sending parameters. */
-    send_param = malloc(sizeof(espnow_send_param_t));
-    memset(send_param, 0, sizeof(espnow_send_param_t));
-    if (send_param == NULL) {
-        ESP_LOGE(TAG, "Malloc send parameter fail");
-        vSemaphoreDelete(s_espnow_queue);
-        esp_now_deinit();
-        return ESP_FAIL;
-    }
-    send_param->unicast = false;
-    send_param->broadcast = true;
-    send_param->state = 0;
-    send_param->magic = esp_random();
-    send_param->count = CONFIG_ESPNOW_SEND_COUNT;	// 100 times
-    send_param->delay = CONFIG_ESPNOW_SEND_DELAY;	// 1 second
-    send_param->len = CONFIG_ESPNOW_SEND_LEN;
-    send_param->buffer = malloc(CONFIG_ESPNOW_SEND_LEN);
-    if (send_param->buffer == NULL) {
-        ESP_LOGE(TAG, "Malloc send buffer fail");
-        free(send_param);
-        vSemaphoreDelete(s_espnow_queue);
-        esp_now_deinit();
-        return ESP_FAIL;
-    }
-    memcpy(send_param->dest_mac, s_broadcast_mac, ESP_NOW_ETH_ALEN);
-    espnow_data_prepare(send_param);
-
-//    xTaskCreate(espnow_task, "espnow_task", 2048, send_param, 4, NULL);
-
     return ESP_OK;
+}
+
+esp_err_t broadcast_init(espnow_send_param_t *target_param)
+{
+	espnow_send_param_t *send_param = target_param;
+
+	/* Initialize sending parameters. */
+	send_param = malloc(sizeof(espnow_send_param_t));
+	memset(send_param, 0, sizeof(espnow_send_param_t));
+	if (send_param == NULL) {
+		ESP_LOGE(TAG, "Malloc send parameter fail");
+		vSemaphoreDelete(s_espnow_queue);
+		esp_now_deinit();
+		return ESP_FAIL;
+	}else{
+		ESP_LOGI(TAG, "broadcast initialize");
+	}
+
+	send_param->unicast = false;
+	send_param->broadcast = true;
+	send_param->state = 0;
+	send_param->magic = esp_random();
+	send_param->count = CONFIG_ESPNOW_SEND_COUNT;		// 100
+	send_param->delay = CONFIG_ESPNOW_SEND_DELAY;		// 1000 = 1s
+	send_param->len = CONFIG_ESPNOW_SEND_LEN;			// 10
+	send_param->buffer = malloc(CONFIG_ESPNOW_SEND_LEN);
+	if (send_param->buffer == NULL) {
+		ESP_LOGE(TAG, "Malloc send buffer fail");
+		free(send_param);
+		vSemaphoreDelete(s_espnow_queue);
+		esp_now_deinit();
+		return ESP_FAIL;
+	}
+	memcpy(send_param->dest_mac, s_broadcast_mac, ESP_NOW_ETH_ALEN);
+	espnow_data_prepare(send_param);
+
+//	xTaskCreate(espnow_task, "espnow_task", 2048, send_param, 4, NULL);
+
+	return ESP_OK;
 }
 
 void espnow_deinit(espnow_send_param_t *send_param)
@@ -113,9 +135,9 @@ void espnow_deinit(espnow_send_param_t *send_param)
 }
 
 
-
-
-
+/* ESPNOW sending or receiving callback function is called in WiFi task.
+ * Users should not do lengthy operations from this task. Instead, post
+ * necessary data to a queue and handle it from a lower priority task. */
 void espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status)
 {
     espnow_event_t evt;
@@ -210,7 +232,7 @@ void espnow_task(void *pvParameter)
     bool is_broadcast = false;
     int ret;
 
-    vTaskDelay(5000 / portTICK_RATE_MS);
+    vTaskDelay(2000 / portTICK_RATE_MS);
     ESP_LOGI(TAG, "Start sending broadcast data");
 
     /* Start sending broadcast ESPNOW data. */
@@ -338,6 +360,7 @@ void espnow_task(void *pvParameter)
         }
     }
 }
+
 
 
 

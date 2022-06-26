@@ -9,7 +9,6 @@
 #define COMPONENTS_UART_INCLUDE_UART_FUNCTION_H_
 
 
-
 static const int RX_BUF_SIZE = 1024;
 
 #define TXD_PIN (GPIO_NUM_17)
