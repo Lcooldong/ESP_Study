@@ -30,6 +30,9 @@
 #include "esp_crc.h"
 #include "espnow_basic_config.h"
 #include "uart_function.c"
+#include "driver/uart.h"
+#include "driver/gpio.h"
+
 //#include "freertos/event_groups.h"
 
 #include "sdkconfig.h"
@@ -53,13 +56,59 @@ void nvs_init(){
 	ESP_ERROR_CHECK( ret );
 }
 
+void my_data_populate(my_data_t *data)
+{
+	ESP_LOGI(TAG, "Populating my_data_t");
+	memcpy(data->mac_addr, s_broadcast_mac, ESP_NOW_ETH_ALEN);
+	data->button_pushed = 0;
+}
 
+static esp_err_t uart_espnow(void *arg)
+{
+    static const char *RX_TASK_TAG = "RX_TASK";
+    esp_log_level_set(RX_TASK_TAG, ESP_LOG_INFO);
+    uint8_t* uart_data = (uint8_t*) malloc(RX_BUF_SIZE+1);
+    static my_data_t data;
+
+    while(1){
+    	const int rxBytes = uart_read_bytes(UART, uart_data, RX_BUF_SIZE, 500 / portTICK_RATE_MS);
+		if (rxBytes > 0) {
+			uart_data[rxBytes] = '\0';
+		    ESP_LOGI(RX_TASK_TAG, "Read %d bytes: '%s'", rxBytes, uart_data);
+
+		    my_data_populate(&data);
+
+		    if(uart_data[0] == '2' && rxBytes == 1)
+		    {
+			  gpio_set_level(BLINK_GPIO, 1);
+			  vTaskSuspend( xHandle );	//  vTaskResume(TaskHandle_t xTaskToResume)
+//			  my_data_t *send_param = (my_data_t *)arg;
+
+			  esp_err_t err = esp_now_send(data.mac_addr, (uint8_t*)&data, sizeof(data));
+			  if (err != ESP_OK) {
+				  ESP_LOGE(TAG, "Send error");
+//				  espnow_deinit(send_param);
+//				  vTaskDelete(NULL);
+				  return ESP_FAIL;
+			  }
+		    }
+		    else if(uart_data[0] == '0' && rxBytes == 1)
+		    {
+			  gpio_set_level(BLINK_GPIO, 0);
+			  vTaskResume(xHandle);
+		    }
+		}
+    }
+    free(uart_data);
+    return ESP_OK;
+}
 
 
 void app_main(void)
 {
 
 	nvs_init();
+	uart_init();
     wifi_init();
     espnow_init();
 //    broadcast_init(my_data);
@@ -99,8 +148,8 @@ void app_main(void)
 	vTaskDelay(1000/ portTICK_PERIOD_MS);
 
 	xTaskCreate(espnow_task, "espnow_task", 2048, my_data, 4, &xHandle);
-
-
+	xTaskCreate((void *)uart_espnow, "uart_rx_task", 1024*2, NULL, configMAX_PRIORITIES, NULL);		// higher priority
+	//	xTaskCreate(tx_task, "uart_tx_task", 1024*2, NULL, configMAX_PRIORITIES-1, NULL);
 
 
 //    my_data = malloc(sizeof(espnow_send_param_t));

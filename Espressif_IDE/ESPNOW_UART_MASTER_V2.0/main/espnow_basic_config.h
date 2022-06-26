@@ -91,6 +91,11 @@ typedef struct {
     uint8_t dest_mac[ESP_NOW_ETH_ALEN];   //MAC address of destination device.
 } espnow_send_param_t;
 
+typedef struct __attribute__((packed)){
+	uint8_t mac_addr[6];
+	bool button_pushed;
+} my_data_t;
+
 
 
 //function

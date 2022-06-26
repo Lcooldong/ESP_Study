@@ -17,6 +17,15 @@ static const int RX_BUF_SIZE = 1024;
 #define UART UART_NUM_2
 #define BLINK_GPIO 2
 
+typedef struct __attribute__((packed)){
+	uint8_t STX;
+	uint8_t ETX;
+	uint8_t len;
+
+}uart_data_t;
+
+
+
 // function
 void uart_init(void);
 int sendData(const char* logName, const char* data);
