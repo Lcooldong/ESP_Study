@@ -33,7 +33,7 @@ char WiFiManager_Name[32];
 void initWiFi() {
   init_SPIFFS(FORMAT_SPIFFS_IF_FAILED);
   listDir("/");
-//  Wire.begin(23, 19); // SDA, SCL
+//  Wire.begin(5, 6); // SDA, SCL
   initOLED();
   init_Neopixel(50);
   WiFi.mode(WIFI_AP_STA);

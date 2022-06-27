@@ -8,20 +8,22 @@
 #ifndef COMPONENTS_UART_INCLUDE_UART_FUNCTION_H_
 #define COMPONENTS_UART_INCLUDE_UART_FUNCTION_H_
 
+#include "sdkconfig.h"
+#include "stdint.h"
 
 static const int RX_BUF_SIZE = 1024;
 
 #define TXD_PIN (GPIO_NUM_17)
 #define RXD_PIN (GPIO_NUM_16)
 
-#define UART UART_NUM_2
+#define UART UART_NUM_1
 #define BLINK_GPIO 2
 
 typedef struct __attribute__((packed)){
 	uint8_t STX;
 	uint8_t ETX;
 	uint8_t len;
-
+	uint8_t data;
 }uart_data_t;
 
 

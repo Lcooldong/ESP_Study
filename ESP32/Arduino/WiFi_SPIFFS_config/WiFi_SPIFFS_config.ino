@@ -1,5 +1,5 @@
-#include "FS.h" // ESP8266
-//#include "SPIFFS.h"  // ESP32 SPIFSPIFFS 라이브러리
+//#include "FS.h" // ESP8266
+#include "SPIFFS.h"  // ESP32 SPIFSPIFFS 라이브러리
 
 char ssid[21]          = "YOUR_SSID";
 char pass[21]          = "YOUR_PASS";
