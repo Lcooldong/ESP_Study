@@ -18,6 +18,7 @@ static const char *TAG = "example";
 
 void app_main(void)
 {
+
     ESP_LOGI(TAG, "Initializing SPIFFS");
 
     esp_vfs_spiffs_conf_t conf = {
