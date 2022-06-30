@@ -6,7 +6,6 @@
 #include "driver/gpio.h"
 #include "sdkconfig.h"
 #include "led_strip.h"
-#include "string.h"
 
 extern "C"
 {
