@@ -7,6 +7,8 @@
 #include "sdkconfig.h"
 #include "led_strip.h"
 
+
+
 extern "C"
 {
 
@@ -49,6 +51,7 @@ extern "C"
     #endif
 
 
+
     void app_main() {
 
         configure_led();
@@ -62,7 +65,7 @@ extern "C"
             /* Toggle the LED state */
             s_led_state = !s_led_state;
 
-            vTaskDelay(100 / portTICK_PERIOD_MS);
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
         }
 
 

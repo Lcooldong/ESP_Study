@@ -1,15 +1,8 @@
 {
 	"folders": [
 		{
-			"name": "ESP32C3_TEST",
 			"path": ".."
 		}
 	],
-	"settings": {
-		"files.associations": {
-			"setjmp.h": "c",
-			"stdio.h": "c",
-			"string": "cpp"
-		}
-	}
+	"settings": {}
 }
