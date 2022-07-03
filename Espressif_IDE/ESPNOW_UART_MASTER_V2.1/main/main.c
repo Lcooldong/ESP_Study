@@ -158,31 +158,4 @@ void app_main(void)
 	xTaskCreate((void *)uart_espnow, "uart_rx_task", 1024*2, NULL, configMAX_PRIORITIES, NULL);		// higher priority
 	//	xTaskCreate(tx_task, "uart_tx_task", 1024*2, NULL, configMAX_PRIORITIES-1, NULL);
 
-
-//    my_data = malloc(sizeof(espnow_send_param_t));
-//	memset(my_data, 0, sizeof(espnow_send_param_t));
-//	if (my_data == NULL) {
-//		ESP_LOGE(TAG, "Malloc send parameter fail");
-//		vSemaphoreDelete(s_espnow_queue);
-//		esp_now_deinit();
-//	}
-//
-//    my_data->unicast = false;
-//    my_data->broadcast = true;
-//    my_data->state = 0;
-//    my_data->magic = esp_random();
-//    my_data->count = CONFIG_ESPNOW_SEND_COUNT;
-//    my_data->delay = CONFIG_ESPNOW_SEND_DELAY;
-//    my_data->len = CONFIG_ESPNOW_SEND_LEN;
-//    my_data->buffer = malloc(CONFIG_ESPNOW_SEND_LEN);
-//
-////    s_evt_group = xEventGroupCreate();
-////    assert(s_evt_group);
-//    espnow_event_t evt;
-//	uint8_t recv_state = 0;
-//	uint16_t recv_seq = 0;
-//	int recv_magic = 0;
-//	bool is_broadcast = false;
-//
-//    free(my_data);
 }
