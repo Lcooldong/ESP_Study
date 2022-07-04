@@ -183,6 +183,20 @@ void espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
         ESP_LOGW(TAG, "Send receive queue fail");
         free(recv_cb->data);
     }
+
+    for(int i=0; i<ESP_NOW_ETH_ALEN; i++)
+    {
+    	printf("%02x:", recv_cb->mac_addr[i]);
+    	if(i % 2 == 0)
+    	{
+//    		printf(":");
+    	}
+
+    }
+    espnow_data_t *buf = (espnow_data_t *)recv_cb->data;
+
+    printf("\r\n%d, %d, %d, %ld, %d, %d, %d\r\n", buf->type, buf->state ,buf->seq_num, buf->magic, buf->crc, buf->payload[0], recv_cb->data_len );
+
 }
 
 /* Parse received ESPNOW data. */
@@ -500,4 +514,31 @@ void received_queue_task(void *pvParameter)
 	}
 }
 
+
+void espnow_return_task(void *pvParameter)
+{
+    espnow_event_t evt;
+//    uint8_t recv_state = 0;
+//    uint16_t recv_seq = 0;
+    int recv_magic = 0;
+    bool is_broadcast = false;
+    int ret;
+
+    vTaskDelay(2000 / portTICK_RATE_MS);
+    ESP_LOGI(TAG, "Start sending return data");
+
+    /* Start sending broadcast ESPNOW data. */
+    for(int i=0; i < 5; i++)
+    {
+        espnow_send_param_t *send_param = (espnow_send_param_t *)pvParameter;
+        if (esp_now_send(send_param->dest_mac, send_param->buffer, send_param->len) != ESP_OK) {
+            ESP_LOGE(TAG, "Send error");
+            espnow_deinit(send_param);
+            vTaskDelete(NULL);
+        }
+        vTaskDelay(500/ portTICK_RATE_MS);
+    }
+
+
+}
 

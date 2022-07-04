@@ -23,6 +23,8 @@
 
 #include "sdkconfig.h"
 #define BTN_PIN 3
+static int count = 0;
+static bool btn_flag = false;
 
 const char *TAG = "ESPNOW_UART_MASTER";
 xQueueHandle s_espnow_queue;
@@ -30,7 +32,9 @@ uint8_t s_broadcast_mac[ESP_NOW_ETH_ALEN] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
 uint16_t s_espnow_seq[ESPNOW_DATA_MAX] = { 0, 0 };
 
 espnow_send_param_t *my_data;
+espnow_send_param_t *my_data2;
 TaskHandle_t xHandle = NULL;
+TaskHandle_t xHandle_return = NULL;
 
 
 void nvs_init(){
@@ -123,8 +127,8 @@ void app_main(void)
 		ESP_LOGI(TAG, "broadcast initialize");
 	}
 
-	my_data->unicast = false;
-	my_data->broadcast = true;
+	my_data->unicast = true;						// 1 : 1 comunication
+	my_data->broadcast = false;
 	my_data->state = 0;
 	my_data->magic = esp_random();
 	my_data->count = CONFIG_ESPNOW_SEND_COUNT;		// 100
@@ -141,6 +145,37 @@ void app_main(void)
 	memcpy(my_data->dest_mac, s_broadcast_mac, ESP_NOW_ETH_ALEN);
 	espnow_data_prepare(my_data);
 
+	my_data2 = malloc(sizeof(espnow_send_param_t));
+	memset(my_data2, 0, sizeof(espnow_send_param_t));
+	if (my_data2 == NULL) {
+		ESP_LOGE(TAG, "Malloc send parameter fail");
+		vSemaphoreDelete(s_espnow_queue);
+		esp_now_deinit();
+
+	}else{
+		ESP_LOGI(TAG, "broadcast initialize");
+	}
+
+	my_data2->unicast = true;						// 1 : 1 comunication
+	my_data2->broadcast = false;
+	my_data2->state = 0;
+	my_data2->magic = esp_random();
+	my_data2->count = CONFIG_ESPNOW_SEND_COUNT;		// 100
+	my_data2->delay = CONFIG_ESPNOW_SEND_DELAY;		// 1000 = 1s
+	my_data2->len = CONFIG_ESPNOW_SEND_LEN;			// 10
+	my_data2->buffer = malloc(CONFIG_ESPNOW_SEND_LEN);
+	if (my_data2->buffer == NULL) {
+		ESP_LOGE(TAG, "Malloc send buffer fail");
+		free(my_data2);
+		vSemaphoreDelete(s_espnow_queue);
+		esp_now_deinit();
+
+	}
+	memcpy(my_data2->dest_mac, s_broadcast_mac, ESP_NOW_ETH_ALEN);
+	espnow_data_prepare(my_data2);
+
+
+
 
     ESP_LOGI(TAG, "Setup Done");
 	vTaskDelay(1000/ portTICK_PERIOD_MS);
@@ -148,19 +183,38 @@ void app_main(void)
 	xTaskCreate(received_queue_task, "espnow_task", 2048, my_data, 4, &xHandle);
 //	xTaskCreate((void *)uart_espnow, "uart_rx_task", 1024*2, NULL, configMAX_PRIORITIES, NULL);		// higher priority
 	//	xTaskCreate(tx_task, "uart_tx_task", 1024*2, NULL, configMAX_PRIORITIES-1, NULL);
+
+//	esp_now_unregister_recv_cb();
 	while(true)
 	{
 		if(gpio_get_level(BTN_PIN) == 0)
 		{
+
 			vTaskDelay(5 / portTICK_RATE_MS);
-			printf("Button Pressed\r\n");
-
-
-
+			printf("Button Pressed %d\r\n", count);
+			count++;
+			if(count == 100)
+				break;
+		}
+		else
+		{
+			count = 0;
 		}
 		vTaskDelay(10 / portTICK_RATE_MS);
-
-
 	}
+	ESP_LOGI(TAG, "STOP COUNT");
+	if(btn_flag == 0)
+	{
+//		esp_now_register_recv_cb(espnow_recv_cb);
 
+//		xTaskCreate(espnow_return_task,"espnow_returen_task", 2048, my_data2, configMAX_PRIORITIES, &xHandle_return);
+//		my_data2->dest_mac = ;
+		if (esp_now_send(my_data2->dest_mac, my_data2->buffer, my_data2->len) != ESP_OK) {
+			ESP_LOGE(TAG, "Send error");
+			espnow_deinit(my_data2);
+			vTaskDelete(NULL);
+		}
+		vTaskDelay(500/ portTICK_RATE_MS);
+		btn_flag = 1;
+	}
 }
