@@ -108,6 +108,7 @@ void espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len);
 int espnow_data_parse(uint8_t *data, uint16_t data_len, uint8_t *state, uint16_t *seq, int *magic);
 void espnow_data_prepare(espnow_send_param_t *send_param);
 void espnow_task(void *pvParameter);
+void received_queue_task(void *pvParameter);
 
 
 

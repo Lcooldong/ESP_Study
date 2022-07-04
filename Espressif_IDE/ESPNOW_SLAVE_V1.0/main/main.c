@@ -1,17 +1,3 @@
-/* ESPNOW Example
-
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
-
-/*
-   This example shows how to use ESPNOW.
-   Prepare two device, one for sending ESPNOW data and another for receiving
-   ESPNOW data.
-*/
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
@@ -36,6 +22,7 @@
 //#include "freertos/event_groups.h"
 
 #include "sdkconfig.h"
+#define BTN_PIN 3
 
 const char *TAG = "ESPNOW_UART_MASTER";
 xQueueHandle s_espnow_queue;
@@ -62,6 +49,7 @@ void my_data_populate(my_data_t *data)
 	memcpy(data->mac_addr, s_broadcast_mac, ESP_NOW_ETH_ALEN);
 	data->button_pushed = 0;
 }
+
 
 static esp_err_t uart_espnow(void *arg)
 {
@@ -118,6 +106,9 @@ void app_main(void)
 	uart_init();
     wifi_init();
     espnow_init();
+
+    gpio_set_direction(BTN_PIN, GPIO_MODE_INPUT);
+	gpio_set_pull_mode(BTN_PIN, GPIO_PULLUP_ONLY);
 //    broadcast_init(my_data);
 
     /* Initialize sending parameters. */
@@ -154,8 +145,22 @@ void app_main(void)
     ESP_LOGI(TAG, "Setup Done");
 	vTaskDelay(1000/ portTICK_PERIOD_MS);
 
-	xTaskCreate(espnow_task, "espnow_task", 2048, my_data, 4, &xHandle);
-	xTaskCreate((void *)uart_espnow, "uart_rx_task", 1024*2, NULL, configMAX_PRIORITIES, NULL);		// higher priority
+	xTaskCreate(received_queue_task, "espnow_task", 2048, my_data, 4, &xHandle);
+//	xTaskCreate((void *)uart_espnow, "uart_rx_task", 1024*2, NULL, configMAX_PRIORITIES, NULL);		// higher priority
 	//	xTaskCreate(tx_task, "uart_tx_task", 1024*2, NULL, configMAX_PRIORITIES-1, NULL);
+	while(true)
+	{
+		if(gpio_get_level(BTN_PIN) == 0)
+		{
+			vTaskDelay(5 / portTICK_RATE_MS);
+			printf("Button Pressed\r\n");
+
+
+
+		}
+		vTaskDelay(10 / portTICK_RATE_MS);
+
+
+	}
 
 }

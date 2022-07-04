@@ -156,6 +156,6 @@ void app_main(void)
 
 	xTaskCreate(espnow_task, "espnow_task", 2048, my_data, 4, &xHandle);
 	xTaskCreate((void *)uart_espnow, "uart_rx_task", 1024*2, NULL, configMAX_PRIORITIES, NULL);		// higher priority
-	//	xTaskCreate(tx_task, "uart_tx_task", 1024*2, NULL, configMAX_PRIORITIES-1, NULL);
+//		xTaskCreate(tx_task, "uart_tx_task", 1024*2, NULL, configMAX_PRIORITIES-1, NULL);
 
 }
