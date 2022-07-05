@@ -209,12 +209,16 @@ void app_main(void)
 
 //		xTaskCreate(espnow_return_task,"espnow_returen_task", 2048, my_data2, configMAX_PRIORITIES, &xHandle_return);
 //		my_data2->dest_mac = ;
-		if (esp_now_send(my_data2->dest_mac, my_data2->buffer, my_data2->len) != ESP_OK) {
-			ESP_LOGE(TAG, "Send error");
-			espnow_deinit(my_data2);
-			vTaskDelete(NULL);
+		for (int i=0; i<3; i++)
+		{
+			if (esp_now_send(my_data2->dest_mac, my_data2->buffer, my_data2->len) != ESP_OK) {
+				ESP_LOGE(TAG, "Send error");
+				espnow_deinit(my_data2);
+				vTaskDelete(NULL);
+			}
+			vTaskDelay(500/ portTICK_RATE_MS);
+			btn_flag = 1;
 		}
-		vTaskDelay(500/ portTICK_RATE_MS);
-		btn_flag = 1;
+
 	}
 }
