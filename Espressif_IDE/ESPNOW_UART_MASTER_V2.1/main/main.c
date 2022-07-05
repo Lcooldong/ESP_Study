@@ -1,17 +1,7 @@
-/* ESPNOW Example
+//#define UART UART_NUM_2
+//#define BLINK_GPIO 2
 
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
 
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
-
-/*
-   This example shows how to use ESPNOW.
-   Prepare two device, one for sending ESPNOW data and another for receiving
-   ESPNOW data.
-*/
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
@@ -93,13 +83,12 @@ static esp_err_t uart_espnow(void *arg)
 				  return ESP_FAIL;
 			  }else{
 				  ESP_LOGI(TAG, "Send to Target");
-
 			  }
 		    }
 		    else if(uart_data[0] == '0' && rxBytes == 1)
 		    {
 			  gpio_set_level(BLINK_GPIO, 0);
-			  vTaskResume(xHandle);
+//			  vTaskResume(xHandle);
 		    }else if(uart_data[0]== '3' && rxBytes == 1){
 
 
