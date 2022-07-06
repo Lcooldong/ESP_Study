@@ -16,8 +16,9 @@ static const int RX_BUF_SIZE = 1024;
 #define TXD_PIN (GPIO_NUM_17)
 #define RXD_PIN (GPIO_NUM_16)
 
-#define UART UART_NUM_2
 #define BLINK_GPIO 2
+#define UART UART_NUM_2
+
 
 typedef struct __attribute__((packed)){
 	uint8_t STX;

@@ -389,7 +389,7 @@ void received_queue_task(void *pvParameter)
 	bool is_broadcast = false;
 	int ret;
 
-	vTaskDelay(2000 / portTICK_RATE_MS);
+	vTaskDelay(1000 / portTICK_RATE_MS);
 	ESP_LOGI(TAG, "Start sending broadcast data");
 
 	/* Start sending broadcast ESPNOW data. */
@@ -444,7 +444,7 @@ void received_queue_task(void *pvParameter)
 				free(recv_cb->data);
 				if (ret == ESPNOW_DATA_BROADCAST) {
 					ESP_LOGI(TAG, "Receive %dth broadcast data from: "MACSTR", len: %d", recv_seq, MAC2STR(recv_cb->mac_addr), recv_cb->data_len);
-
+//					ESP_LOGI(TAG, "%d", recv_cb->count);
 					/* If MAC address does not exist in peer list, add it to peer list. */
 					if (esp_now_is_peer_exist(recv_cb->mac_addr) == false) {
 						esp_now_peer_info_t *peer = malloc(sizeof(esp_now_peer_info_t));
