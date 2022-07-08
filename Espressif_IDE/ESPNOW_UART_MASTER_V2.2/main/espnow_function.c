@@ -29,7 +29,7 @@ extern const char *TAG;
 extern xQueueHandle s_espnow_queue;
 extern uint8_t s_broadcast_mac[ESP_NOW_ETH_ALEN];
 extern uint16_t s_espnow_seq[ESPNOW_DATA_MAX];
-
+extern TaskHandle_t xHandle;
 
 
 
@@ -106,7 +106,7 @@ esp_err_t broadcast_init(espnow_send_param_t *target_param)
 	send_param->broadcast = true;
 	send_param->state = 0;
 	send_param->magic = esp_random();
-	send_param->count = CONFIG_ESPNOW_SEND_COUNT;		// 100
+	send_param->count = 100;		// 100
 	send_param->delay = CONFIG_ESPNOW_SEND_DELAY;		// 1000 = 1s
 	send_param->len = CONFIG_ESPNOW_SEND_LEN;			// 10
 	send_param->buffer = malloc(CONFIG_ESPNOW_SEND_LEN);
@@ -163,6 +163,8 @@ void espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
     if (mac_addr == NULL || data == NULL || len <= 0) {
         ESP_LOGE(TAG, "Receive cb arg error");
         return;
+    }else{
+    	ESP_LOGD(TAG, "%s", recv_cb->mac_addr);
     }
 
     evt.id = ESPNOW_RECV_CB;
@@ -177,6 +179,8 @@ void espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
     if (xQueueSend(s_espnow_queue, &evt, ESPNOW_MAXDELAY) != pdTRUE) {
         ESP_LOGW(TAG, "Send receive queue fail");
         free(recv_cb->data);
+    }else{
+    	ESP_LOGI(TAG, "receive queue ok");
     }
 }
 
@@ -231,7 +235,7 @@ void espnow_task(void *pvParameter)
     bool is_broadcast = false;
     int ret;
 
-    vTaskDelay(2000 / portTICK_RATE_MS);
+//    vTaskDelay(2000 / portTICK_RATE_MS);
     ESP_LOGI(TAG, "Start sending broadcast data");
 
     /* Start sending broadcast ESPNOW data. */
@@ -240,6 +244,8 @@ void espnow_task(void *pvParameter)
         ESP_LOGE(TAG, "Send error");
         espnow_deinit(send_param);
         vTaskDelete(NULL);
+    }else{
+    	ESP_LOGI(TAG, "espnow_task Send first");
     }
 
     while (xQueueReceive(s_espnow_queue, &evt, portMAX_DELAY) == pdTRUE) {
@@ -253,14 +259,17 @@ void espnow_task(void *pvParameter)
 
                 if (is_broadcast && (send_param->broadcast == false)) {
                     break;
+                }else{
+                	ESP_LOGI(TAG, "espnow_task broadcast");
                 }
 
+                // Stop Sending to target
                 if (!is_broadcast) {
                     send_param->count--;
                     if (send_param->count == 0) {
-                        ESP_LOGI(TAG, "Send done");
-                        espnow_deinit(send_param);
-                        vTaskDelete(NULL);
+                        ESP_LOGI(TAG, "Send done %d", send_param->count);
+//                        espnow_deinit(send_param);
+//                        vTaskDelete(NULL);
                     }
                 }
 

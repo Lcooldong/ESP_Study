@@ -92,6 +92,7 @@ static esp_err_t uart_espnow(void *arg)
 		    }else if(uart_data[0]== '3' && rxBytes == 1){
 
 
+
 		    }
 		}
     }
@@ -123,10 +124,10 @@ void app_main(void)
 
 	my_data->unicast = false;
 	my_data->broadcast = true;
-	my_data->state = 0;
+	my_data->state = 1;
 	my_data->magic = esp_random();
-	my_data->count = CONFIG_ESPNOW_SEND_COUNT;		// 100
-	my_data->delay = CONFIG_ESPNOW_SEND_DELAY;		// 1000 = 1s
+	my_data->count = 100;		// 100
+	my_data->delay = CONFIG_ESPNOW_SEND_DELAY + 1000;		// 1000 = 1s
 	my_data->len = CONFIG_ESPNOW_SEND_LEN;			// 10
 	my_data->buffer = malloc(CONFIG_ESPNOW_SEND_LEN);
 	if (my_data->buffer == NULL) {
