@@ -26,7 +26,7 @@
 static int count = 0;
 bool btn_flag = false;
 
-const char *TAG = "ESPNOW_UART_MASTER";
+const char *TAG = "ESPNOW_SLAVE";
 xQueueHandle s_espnow_queue;
 uint8_t s_broadcast_mac[ESP_NOW_ETH_ALEN] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 uint16_t s_espnow_seq[ESPNOW_DATA_MAX] = { 0, 0 };
@@ -54,54 +54,6 @@ void my_data_populate(my_data_t *data)
 }
 
 
-static esp_err_t uart_espnow(void *arg)
-{
-    static const char *RX_TASK_TAG = "RX_TASK";
-    esp_log_level_set(RX_TASK_TAG, ESP_LOG_INFO);
-    uint8_t* uart_data = (uint8_t*) malloc(RX_BUF_SIZE+1);
-    static my_data_t data;
-
-    while(1){
-    	const int rxBytes = uart_read_bytes(UART, uart_data, RX_BUF_SIZE, 500 / portTICK_RATE_MS);
-		if (rxBytes > 0) {
-			uart_data[rxBytes] = '\0';
-		    ESP_LOGI(RX_TASK_TAG, "Read %d bytes: '%s'", rxBytes, uart_data);
-
-		    my_data_populate(&data);
-
-
-		    if(uart_data[0] == '2' && rxBytes == 1)
-		    {
-			  gpio_set_level(BLINK_GPIO, 1);
-			  vTaskSuspend( xHandle );	//  vTaskResume(TaskHandle_t xTaskToResume)
-//			  my_data_t *send_param = (my_data_t *)arg;
-
-			  esp_err_t err = esp_now_send(data.mac_addr, (uint8_t*)&data, sizeof(data));
-			  if (err != ESP_OK) {
-				  ESP_LOGE(TAG, "Send error");
-//				  espnow_deinit(send_param);
-//				  vTaskDelete(NULL);
-				  return ESP_FAIL;
-			  }else{
-				  ESP_LOGI(TAG, "Send to Target");
-
-			  }
-		    }
-		    else if(uart_data[0] == '0' && rxBytes == 1)
-		    {
-			  gpio_set_level(BLINK_GPIO, 0);
-			  vTaskResume(xHandle);
-		    }else if(uart_data[0]== '3' && rxBytes == 1){
-
-
-		    }
-		}
-    }
-    free(uart_data);
-    return ESP_OK;
-}
-
-
 void app_main(void)
 {
 
@@ -126,12 +78,12 @@ void app_main(void)
 		ESP_LOGI(TAG, "broadcast initialize");
 	}
 
-	my_data->unicast = true;						// 1 : 1 comunication
-	my_data->broadcast = false;
-	my_data->state = 0;
+	my_data->unicast = false;						// 1 : 1 comunication
+	my_data->broadcast = true;
+	my_data->state = 1;
 	my_data->magic = esp_random();
-	my_data->count = CONFIG_ESPNOW_SEND_COUNT;		// 100
-	my_data->delay = CONFIG_ESPNOW_SEND_DELAY;		// 1000 = 1s
+	my_data->count = 100;		// Send count
+	my_data->delay = 0;		// 1000 = 1s
 	my_data->len = CONFIG_ESPNOW_SEND_LEN;			// 10
 	my_data->buffer = malloc(CONFIG_ESPNOW_SEND_LEN);
 	if (my_data->buffer == NULL) {
@@ -153,8 +105,7 @@ void app_main(void)
 	vTaskDelay(1000/ portTICK_PERIOD_MS);
 
 	xTaskCreate(received_queue_task, "espnow_task", 2048, my_data, 4, &xHandle);
-//	xTaskCreate((void *)uart_espnow, "uart_rx_task", 1024*2, NULL, configMAX_PRIORITIES, NULL);		// higher priority
-	//	xTaskCreate(tx_task, "uart_tx_task", 1024*2, NULL, configMAX_PRIORITIES-1, NULL);
+
 
 //	esp_now_unregister_recv_cb();
 	while(true)

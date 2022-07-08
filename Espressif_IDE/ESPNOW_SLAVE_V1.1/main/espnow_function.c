@@ -148,6 +148,8 @@ void espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status)
     if (mac_addr == NULL) {
         ESP_LOGE(TAG, "Send cb arg error");
         return;
+    }else{
+    	printf("Send callback working\r\n");
     }
 
     evt.id = ESPNOW_SEND_CB;
@@ -167,13 +169,12 @@ void espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
         ESP_LOGE(TAG, "Receive cb arg error");
         return;
     }else{
+    	printf("------Receiving Completed------\r\n");
     	ESP_LOGI(TAG, "Received Callback");
     }
 
     evt.id = ESPNOW_RECV_CB;
     memcpy(recv_cb->mac_addr, mac_addr, ESP_NOW_ETH_ALEN);
-
-
     recv_cb->data = malloc(len);
     if (recv_cb->data == NULL) {
         ESP_LOGE(TAG, "Malloc receive data fail");
@@ -181,9 +182,6 @@ void espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
     }
     memcpy(recv_cb->data, data, len);
     recv_cb->data_len = len;
-
-
-
     if (xQueueSend(s_espnow_queue, &evt, ESPNOW_MAXDELAY) != pdTRUE) {
         ESP_LOGW(TAG, "Send receive queue fail");
         free(recv_cb->data);
@@ -191,9 +189,18 @@ void espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 
 
     espnow_data_t *buf = (espnow_data_t *)recv_cb->data;
-
-
-    printf("\r\n%d, %d, %d, %ld, %d, %d, %d\r\n", buf->type, buf->state ,buf->seq_num, buf->magic, buf->crc, buf->payload[0], recv_cb->data_len );
+	for(int i=0; i<ESP_NOW_ETH_ALEN; i++)
+	{
+		printf("%02x", recv_cb->mac_addr[i]);
+		if( i < ESP_NOW_ETH_ALEN-1){
+			printf(":");
+		}
+		else
+		{
+			printf("\r\n");
+		}
+	}
+    printf("%d, %d, %d, %ld, %d, %d, %d\r\n", buf->type, buf->state ,buf->seq_num, buf->magic, buf->crc, buf->payload[0], recv_cb->data_len );
 
     if (btn_flag == 1)
     {
@@ -205,14 +212,14 @@ void espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
     		esp_now_deinit();
 
     	}else{
-    		ESP_LOGI(TAG, "return for broadcast");
+    		ESP_LOGI(TAG, "prepare for return");
     	}
 
-    	my_data2->unicast = true;						// 1 : 1 comunication
-    	my_data2->broadcast = false;
-    	my_data2->state = 0;
+    	my_data2->unicast = false;						// 1 : 1 comunication
+    	my_data2->broadcast = true;
+    	my_data2->state = buf->state + 1;
     	my_data2->magic = esp_random();
-    	my_data2->count = CONFIG_ESPNOW_SEND_COUNT + 2;		// 100
+    	my_data2->count = CONFIG_ESPNOW_SEND_COUNT;		// 100
     	my_data2->delay = CONFIG_ESPNOW_SEND_DELAY;		// 1000 = 1s
     	my_data2->len = CONFIG_ESPNOW_SEND_LEN;			// 10
     	my_data2->buffer = malloc(CONFIG_ESPNOW_SEND_LEN);
@@ -223,18 +230,23 @@ void espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
     		esp_now_deinit();
 
     	}
-    	memcpy(my_data2->dest_mac, s_broadcast_mac, ESP_NOW_ETH_ALEN);
+    	memcpy(my_data2->dest_mac, recv_cb->mac_addr, ESP_NOW_ETH_ALEN);
     	espnow_data_prepare(my_data2);
 
 
+    	printf("buf-state : %d\r\n", my_data2->state);
 
 		if (esp_now_send(recv_cb->mac_addr, my_data2->buffer, my_data2->len) != ESP_OK) {
 			ESP_LOGE(TAG, "Send error");
 			espnow_deinit(my_data2);
 			vTaskDelete(NULL);
+			btn_flag = 0;
+		}else{
+			btn_flag = 1;
+			printf("-------Send Okay------\r\n");
 		}
-		vTaskDelay(500/ portTICK_RATE_MS);
-		btn_flag = 1;
+//		vTaskDelay(500/ portTICK_RATE_MS);
+
 
 
     }
@@ -316,14 +328,14 @@ void espnow_task(void *pvParameter)
                     break;
                 }
 
-                if (!is_broadcast) {
-                    send_param->count--;
-                    if (send_param->count == 0) {
-                        ESP_LOGI(TAG, "Send done");
-                        espnow_deinit(send_param);
-                        vTaskDelete(NULL);
-                    }
-                }
+//                if (!is_broadcast) {
+//                    send_param->count--;
+//                    if (send_param->count == 0) {
+//                        ESP_LOGI(TAG, "Send done");
+//                        espnow_deinit(send_param);
+//                        vTaskDelete(NULL);
+//                    }
+//                }
 
                 /* Delay a while before sending the next data. */
                 if (send_param->delay > 0) {
@@ -432,7 +444,7 @@ void received_queue_task(void *pvParameter)
 	int ret;
 
 	vTaskDelay(1000 / portTICK_RATE_MS);
-	ESP_LOGI(TAG, "Start sending broadcast data");
+	ESP_LOGI(TAG, "Queue Task");
 
 	/* Start sending broadcast ESPNOW data. */
 	espnow_send_param_t *send_param = (espnow_send_param_t *)pvParameter;
@@ -451,14 +463,15 @@ void received_queue_task(void *pvParameter)
 					break;
 				}
 
-				if (!is_broadcast) {
-					send_param->count--;
-					if (send_param->count == 0) {
-						ESP_LOGI(TAG, "Send done");
-						espnow_deinit(send_param);
-						vTaskDelete(NULL);
-					}
-				}
+				// Stop Sending to target
+//				if (!is_broadcast) {
+//					send_param->count--;
+//					if (send_param->count == 0) {
+//						ESP_LOGI(TAG, "Send done");
+//						espnow_deinit(send_param);
+//						vTaskDelete(NULL);
+//					}
+//				}
 
 				/* Delay a while before sending the next data. */
 				if (send_param->delay > 0) {
