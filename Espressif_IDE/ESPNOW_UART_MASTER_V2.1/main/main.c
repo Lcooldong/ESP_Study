@@ -19,7 +19,7 @@
 #include "esp_now.h"
 #include "esp_crc.h"
 #include "espnow_basic_config.h"
-#include "uart_function.c"
+#include "uart_function.h"
 #include "driver/uart.h"
 #include "driver/gpio.h"
 

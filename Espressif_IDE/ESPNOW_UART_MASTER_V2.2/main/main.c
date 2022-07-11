@@ -1,3 +1,7 @@
+//#define UART UART_NUM_2
+//#define BLINK_GPIO 2
+
+
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
@@ -15,16 +19,13 @@
 #include "esp_now.h"
 #include "esp_crc.h"
 #include "espnow_basic_config.h"
-#include "uart_function.c"
+#include "uart_function.h"
 #include "driver/uart.h"
 #include "driver/gpio.h"
 
 //#include "freertos/event_groups.h"
 
 #include "sdkconfig.h"
-#define BTN_PIN 3
-static int count = 0;
-bool btn_flag = false;
 
 const char *TAG = "ESPNOW_UART_MASTER";
 xQueueHandle s_espnow_queue;
@@ -33,7 +34,6 @@ uint16_t s_espnow_seq[ESPNOW_DATA_MAX] = { 0, 0 };
 
 espnow_send_param_t *my_data;
 TaskHandle_t xHandle = NULL;
-TaskHandle_t xHandle_return = NULL;
 
 
 void nvs_init(){
@@ -52,7 +52,6 @@ void my_data_populate(my_data_t *data)
 	memcpy(data->mac_addr, s_broadcast_mac, ESP_NOW_ETH_ALEN);
 	data->button_pushed = 0;
 }
-
 
 static esp_err_t uart_espnow(void *arg)
 {
@@ -84,14 +83,14 @@ static esp_err_t uart_espnow(void *arg)
 				  return ESP_FAIL;
 			  }else{
 				  ESP_LOGI(TAG, "Send to Target");
-
 			  }
 		    }
 		    else if(uart_data[0] == '0' && rxBytes == 1)
 		    {
 			  gpio_set_level(BLINK_GPIO, 0);
-			  vTaskResume(xHandle);
+//			  vTaskResume(xHandle);
 		    }else if(uart_data[0]== '3' && rxBytes == 1){
+
 
 
 		    }
@@ -109,9 +108,6 @@ void app_main(void)
 	uart_init();
     wifi_init();
     espnow_init();
-
-    gpio_set_direction(BTN_PIN, GPIO_MODE_INPUT);
-	gpio_set_pull_mode(BTN_PIN, GPIO_PULLUP_ONLY);
 //    broadcast_init(my_data);
 
     /* Initialize sending parameters. */
@@ -126,12 +122,12 @@ void app_main(void)
 		ESP_LOGI(TAG, "broadcast initialize");
 	}
 
-	my_data->unicast = true;						// 1 : 1 comunication
-	my_data->broadcast = false;
-	my_data->state = 0;
+	my_data->unicast = false;
+	my_data->broadcast = true;
+	my_data->state = 1;
 	my_data->magic = esp_random();
-	my_data->count = CONFIG_ESPNOW_SEND_COUNT;		// 100
-	my_data->delay = CONFIG_ESPNOW_SEND_DELAY;		// 1000 = 1s
+	my_data->count = 100;		// 100
+	my_data->delay = CONFIG_ESPNOW_SEND_DELAY + 1000;		// 1000 = 1s
 	my_data->len = CONFIG_ESPNOW_SEND_LEN;			// 10
 	my_data->buffer = malloc(CONFIG_ESPNOW_SEND_LEN);
 	if (my_data->buffer == NULL) {
@@ -145,43 +141,11 @@ void app_main(void)
 	espnow_data_prepare(my_data);
 
 
-
-
-
-
     ESP_LOGI(TAG, "Setup Done");
 	vTaskDelay(1000/ portTICK_PERIOD_MS);
 
-	xTaskCreate(received_queue_task, "espnow_task", 2048, my_data, 4, &xHandle);
-//	xTaskCreate((void *)uart_espnow, "uart_rx_task", 1024*2, NULL, configMAX_PRIORITIES, NULL);		// higher priority
-	//	xTaskCreate(tx_task, "uart_tx_task", 1024*2, NULL, configMAX_PRIORITIES-1, NULL);
+	xTaskCreate(espnow_task, "espnow_task", 2048, my_data, 4, &xHandle);
+	xTaskCreate((void *)uart_espnow, "uart_rx_task", 1024*2, NULL, configMAX_PRIORITIES, NULL);		// higher priority
+//		xTaskCreate(tx_task, "uart_tx_task", 1024*2, NULL, configMAX_PRIORITIES-1, NULL);
 
-//	esp_now_unregister_recv_cb();
-	while(true)
-	{
-		while(btn_flag == 0)
-		{
-			if(gpio_get_level(BTN_PIN) == 0)
-			{
-
-				vTaskDelay(5 / portTICK_RATE_MS);
-				printf("Button Pressed %d\r\n", count);
-				count++;
-				if(count >= 100)
-				{
-					ESP_LOGI(TAG, "STOP COUNT");
-					btn_flag = 1;
-					break;
-				}
-
-			}
-			else
-			{
-				count = 0;
-			}
-			vTaskDelay(20 / portTICK_RATE_MS);
-		}
-		vTaskDelay(50/ portTICK_RATE_MS);
-
-	}
 }

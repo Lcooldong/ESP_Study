@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>ESPNOW_UART_MASTER_V2.1</name>
+	<name>ESPNOW_SLAVE_V1.1</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -254,11 +254,6 @@
 			<location>C:/Espressif/frameworks/esp-idf-v4.4.1/components/esp_adc_cal/esp_adc_cal_common.c</location>
 		</link>
 		<link>
-			<name>esp_idf_components/esp_adc_cal/esp_adc_cal_esp32.c</name>
-			<type>1</type>
-			<location>C:/Espressif/frameworks/esp-idf-v4.4/components/esp_adc_cal/esp_adc_cal_esp32.c</location>
-		</link>
-		<link>
 			<name>esp_idf_components/esp_event/default_event_loop.c</name>
 			<type>1</type>
 			<location>C:/Espressif/frameworks/esp-idf-v4.4.1/components/esp_event/default_event_loop.c</location>
@@ -407,11 +402,6 @@
 			<name>esp_idf_components/esp_system/crosscore_int.c</name>
 			<type>1</type>
 			<location>C:/Espressif/frameworks/esp-idf-v4.4.1/components/esp_system/crosscore_int.c</location>
-		</link>
-		<link>
-			<name>esp_idf_components/esp_system/dbg_stubs.c</name>
-			<type>1</type>
-			<location>C:/Espressif/frameworks/esp-idf-v4.4/components/esp_system/dbg_stubs.c</location>
 		</link>
 		<link>
 			<name>esp_idf_components/esp_system/debug_stubs.c</name>
@@ -1727,11 +1717,6 @@
 			<name>esp_idf_components/esp_wifi/src/coexist.c</name>
 			<type>1</type>
 			<location>C:/Espressif/frameworks/esp-idf-v4.4.1/components/esp_wifi/src/coexist.c</location>
-		</link>
-		<link>
-			<name>esp_idf_components/esp_wifi/src/lib_printf.c</name>
-			<type>1</type>
-			<location>C:/Espressif/frameworks/esp-idf-v4.4/components/esp_wifi/src/lib_printf.c</location>
 		</link>
 		<link>
 			<name>esp_idf_components/esp_wifi/src/mesh_event.c</name>
@@ -3147,11 +3132,6 @@
 			<name>esp_idf_components/mbedtls/mbedtls/library/md5.c</name>
 			<type>1</type>
 			<location>C:/Espressif/frameworks/esp-idf-v4.4.1/components/mbedtls/mbedtls/library/md5.c</location>
-		</link>
-		<link>
-			<name>esp_idf_components/mbedtls/mbedtls/library/md_wrap.c</name>
-			<type>1</type>
-			<location>C:/Espressif/frameworks/esp-idf-v4.4/components/mbedtls/mbedtls/library/md_wrap.c</location>
 		</link>
 		<link>
 			<name>esp_idf_components/mbedtls/mbedtls/library/memory_buffer_alloc.c</name>
