@@ -2,7 +2,12 @@
 #include "RMaker.h"
 #include "WiFi.h"
 #include "WiFiProv.h"
-
+#include <Adafruit_NeoPixel.h>
+#ifdef __AVR__
+ #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
+#endif
+#define LED_PIN 2
+#define LED_COUNT 60
 #define DEFAULT_POWER_MODE true
 const char *service_name = "PROV_1234";
 const char *pop = "abcd1234";
@@ -11,6 +16,7 @@ const char *pop = "abcd1234";
 #if CONFIG_IDF_TARGET_ESP32C3
 static int gpio_0 = 3;        // Button
 static int gpio_switch = 7;   // Switch
+
 #else
 //GPIO for virtual device
 static int gpio_0 = 0;
@@ -22,6 +28,7 @@ bool switch_state = true;
 
 //The framework provides some standard device types like switch, lightbulb, fan, temperaturesensor.
 static Switch my_switch("Switch", &gpio_switch);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 void sysProvEvent(arduino_event_t *sys_event)
 {
@@ -48,16 +55,27 @@ void write_callback(Device *device, Param *param, const param_val_t val, void *p
         switch_state = val.val.b;
         (switch_state == false) ? digitalWrite(gpio_switch, LOW) : digitalWrite(gpio_switch, HIGH);
         param->updateAndReport(val);
+        if(switch_state)
+          pickOneLED(0, strip.Color(255, 40, 100), 50, 50);
+        else
+          pickOneLED(0, strip.Color(255, 40, 100), 0, 50);
     }
 }
 
 void setup()
 {
     Serial.begin(115200);
-    pinMode(gpio_0, INPUT);
+    pinMode(gpio_0, INPUT_PULLUP);
     pinMode(gpio_switch, OUTPUT);
     digitalWrite(gpio_switch, DEFAULT_POWER_MODE);
+#if defined(__AVR_ATtiny85__) && (F_CPU == 16000000)
+    clock_prescale_set(clock_div_1);
+#endif
+    strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
+    strip.show();            // Turn OFF all pixels ASAP
+    strip.setBrightness(50); // Set BRIGHTNESS to about 1/5 (max = 255)
 
+    
     Node my_node;    
     my_node = RMaker.initNode("ESP RainMaker Node");
 
@@ -111,7 +129,22 @@ void loop()
           Serial.printf("Toggle State to %s.\n", switch_state ? "true" : "false");
           my_switch.updateAndReportParam(ESP_RMAKER_DEF_POWER_NAME, switch_state);
           (switch_state == false) ? digitalWrite(gpio_switch, LOW) : digitalWrite(gpio_switch, HIGH);
+            
       }
     }
     delay(100);
+}
+
+
+void pickOneLED(uint8_t ledNum, uint32_t color, uint8_t brightness, int wait){
+    strip.setBrightness(brightness);
+    strip.setPixelColor(ledNum, color);  
+    strip.show();                                               
+    delay(wait);
+}
+
+void resetNeopixel(){
+  for(int i=0; i < 256; i++){
+    pickOneLED(i, strip.Color(0, 0, 0), 0, 0 );
+  } 
 }
