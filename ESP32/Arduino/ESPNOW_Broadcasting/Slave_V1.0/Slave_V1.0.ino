@@ -93,7 +93,7 @@ void setup() {
   init_Neopixel(50);
   
   //Set device in AP mode to begin with
-  WiFi.mode(WIFI_AP);
+  WiFi.mode(WIFI_AP_STA);
   // configure device AP mode
   configDeviceAP();
   // This is the mac address of the Slave in AP Mode
@@ -103,6 +103,14 @@ void setup() {
   // Once ESPNow is successfully Init, we will register for recv CB to
   // get recv packer info.
   esp_now_register_recv_cb(OnDataRecv);
+
+  u8g2.clearBuffer();
+  u8g2.setFontMode(1);
+  u8g2.setFont(u8g2_font_cu12_hr);
+  u8g2.setCursor(0, 15);
+  u8g2.print("Setup Done");
+  u8g2.sendBuffer();
+  
 }
 
 // callback when data is recv from Master
@@ -123,6 +131,27 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
   uint8_t _brightness = incomingReadings.brightness;
   uint8_t waitORtimes = incomingReadings.wait;
   strip.setBrightness(_brightness);
+  
+  u8g2.clearBuffer();
+  u8g2.setFontMode(1);
+  u8g2.setFont(u8g2_font_cu12_tr);
+  
+  u8g2.setCursor(0, 11);
+  u8g2.print("Red  : ");
+  u8g2.setCursor(45, 11);
+  u8g2.print(R);
+  
+  u8g2.setCursor(0, 26);
+  u8g2.print("Green: ");
+  u8g2.setCursor(45, 26);
+  u8g2.print(G);
+  
+  u8g2.setCursor(0, 41);
+  u8g2.print("Blue : ");
+  u8g2.setCursor(45, 41);
+  u8g2.print(B);
+  
+  u8g2.sendBuffer();
   
   // target_board_led >> 4
   if(device_id == (target_board_led / 16))
