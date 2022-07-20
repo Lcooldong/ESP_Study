@@ -59,8 +59,8 @@ void initWiFi() {
     
     Serial.print('.');
     delay(1000);   
-    connecting_interval = millis();
-    if(connecting_interval >= connecting_interval)
+    connectingTime = millis();
+    if(connectingTime >= connecting_interval)
     {
       Serial.println();
       Serial.println("Not Connected -> Open WiFi Manager");
