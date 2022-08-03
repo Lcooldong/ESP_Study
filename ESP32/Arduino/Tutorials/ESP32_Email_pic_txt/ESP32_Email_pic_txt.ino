@@ -19,8 +19,8 @@
 #endif
 #include <ESP_Mail_Client.h>
 
-#define WIFI_SSID "IT"
-#define WIFI_PASSWORD "@Polytech"
+#define WIFI_SSID "SK_WiFiGIGA9687"
+#define WIFI_PASSWORD "1712042694"
 
 #define SMTP_HOST "smtp.gmail.com"
 
