@@ -24,8 +24,11 @@
 #include <UniversalTelegramBot.h>
 
 // Wifi network station credentials
-#define WIFI_SSID "SK_WiFiGIGA9687"
-#define WIFI_PASSWORD "1712042694"
+
+//#define WIFI_SSID "SK_WiFiGIGA9687"
+//#define WIFI_PASSWORD "1712042694"
+#define WIFI_SSID "409"
+#define WIFI_PASSWORD "polybot409"
 // Telegram BOT Token (Get from Botfather)
 #define BOT_TOKEN "5512330410:AAHgrwQurW7R0ubaWQgAt-68kDp5pXzz6yM"
 
