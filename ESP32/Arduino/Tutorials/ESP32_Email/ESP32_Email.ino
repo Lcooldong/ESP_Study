@@ -20,15 +20,15 @@
 #endif
 #include <ESP_Mail_Client.h>
 
-#define WIFI_SSID "IT"
-#define WIFI_PASSWORD "@Polytech"
+#define WIFI_SSID "409"
+#define WIFI_PASSWORD "polybot409"
 
 #define SMTP_HOST "smtp.gmail.com"
 #define SMTP_PORT 465
 
 /* The sign in credentials */
 #define AUTHOR_EMAIL "alarmrobotpolytech@gmail.com"
-#define AUTHOR_PASSWORD "@Polytech21"
+#define AUTHOR_PASSWORD "ebtogdwriajpmbhf"
 
 /* Recipient's email*/
 #define RECIPIENT_EMAIL "scooldong@gmail.com"
@@ -77,16 +77,16 @@ void setup(){
   SMTP_Message message;
 
   /* Set the message headers */
-  message.sender.name = "폴리텍";
+  message.sender.name = "폴리텍";                 // 보낸 대상 이름
   message.sender.email = AUTHOR_EMAIL;
-  message.subject = "오늘의 날씨";
-  message.addRecipient("애용", RECIPIENT_EMAIL);
+  message.subject = "오늘의 날씨";                 //  메일제목
+  message.addRecipient("애용", RECIPIENT_EMAIL);  //  받는 대상 이름
 
 
   // HTML 형식
   
   /*Send HTML message*/
-  
+  // 보낼 내용
   String htmlMsg = "<div style=\"color:#2f4468;\"><h1>안녕!!</h1><p>- ㄴㅇㄱ 알 수 없는 정체</p></div>";
   message.html.content = htmlMsg.c_str();
   message.html.content = htmlMsg.c_str();
