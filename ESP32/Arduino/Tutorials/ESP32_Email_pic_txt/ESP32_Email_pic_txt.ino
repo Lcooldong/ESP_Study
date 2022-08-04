@@ -19,31 +19,24 @@
 #endif
 #include <ESP_Mail_Client.h>
 
-//#include "FS.h"
-//#include <LittleFS.h>
-#include "SPIFFS.h"
-//#include "LITTLEFS.h"
-#define FORMAT_SPIFFS_IF_FAILED true    // 마운트 실패시 SPIFFS 파일 시스템 포맷
+#define WIFI_SSID "SK_WiFiGIGA9687"
+#define WIFI_PASSWORD "1712042694"
+
+#define SMTP_HOST "smtp.gmail.com"
 
 /** The smtp port e.g. 
  * 25  or esp_mail_smtp_port_25
  * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
 */
-
-#define WIFI_SSID "409"
-#define WIFI_PASSWORD "polybot409"
-
-#define SMTP_HOST "smtp.gmail.com"
 #define SMTP_PORT 465
 
-/* The sign in credentials */
+/* The log in credentials */
 #define AUTHOR_EMAIL "alarmrobotpolytech@gmail.com"
-#define AUTHOR_PASSWORD "ebtogdwriajpmbhf"
+#define AUTHOR_PASSWORD "@Polytech21"
 
 /* Recipient's email*/
 #define RECIPIENT_EMAIL "scooldong@gmail.com"
-
 /* The SMTP Session object used for Email sending */
 
 SMTPSession smtp;
@@ -67,7 +60,6 @@ void setup(){
   Serial.println();
 
   if (!SPIFFS.begin(true)) {
-//  if (!LittleFS.begin(FORMAT_SPIFFS_IF_FAILED)) {
     Serial.println("An error has occurred while mounting SPIFFS");
   }
   else{
