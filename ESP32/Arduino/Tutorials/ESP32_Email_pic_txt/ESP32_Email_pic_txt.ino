@@ -12,6 +12,10 @@
 // The file systems for flash and sd memory can be changed in ESP_Mail_FS.h.
 
 #include <Arduino.h>
+#define ESP32
+#include "ESP_Mail_FS.h"
+
+#include "SPIFFS.h"
 #if defined(ESP32)
   #include <WiFi.h>
 #elif defined(ESP8266)
@@ -33,7 +37,7 @@
 
 /* The log in credentials */
 #define AUTHOR_EMAIL "alarmrobotpolytech@gmail.com"
-#define AUTHOR_PASSWORD "@Polytech21"
+#define AUTHOR_PASSWORD "ebtogdwriajpmbhf"
 
 /* Recipient's email*/
 #define RECIPIENT_EMAIL "scooldong@gmail.com"

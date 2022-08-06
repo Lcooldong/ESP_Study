@@ -18,8 +18,10 @@
 #include <UniversalTelegramBot.h>
 #include <ArduinoJson.h>
 
-const char* ssid = "409";
-const char* password = "polybot409";
+//const char* ssid = "409";
+//const char* password = "polybot409";
+const char* ssid     = "SK_WiFiGIGA9687";   //WIFI SSID
+const char* password = "1712042694";   //WIFI password
 
 // Initialize Telegram BOT
 String BOTtoken = "5406475465:AAHZ_0m_wkqwQj8e74uMZGPgtTls1wqUVJw";  // your Bot Token (Get from Botfather)
@@ -86,12 +88,15 @@ void configInitCamera(){
 
   //init with high specs to pre-allocate larger buffers
   if(psramFound()){
-    config.frame_size = FRAMESIZE_UXGA;
+//    config.frame_size = FRAMESIZE_UXGA;
+    config.frame_size = FRAMESIZE_QQVGA;
     config.jpeg_quality = 10;  //0-63 lower number means higher quality
     config.fb_count = 2;
   } else {
-    config.frame_size = FRAMESIZE_SVGA;
-    config.jpeg_quality = 12;  //0-63 lower number means higher quality
+//    config.frame_size = FRAMESIZE_SVGA;
+    config.frame_size = FRAMESIZE_QQVGA;
+//    config.jpeg_quality = 12;  //0-63 lower number means higher quality
+    config.jpeg_quality = 16;  //0-63 lower number means higher quality
     config.fb_count = 1;
   }
   
@@ -105,7 +110,7 @@ void configInitCamera(){
 
   // Drop down frame size for higher initial frame rate
   sensor_t * s = esp_camera_sensor_get();
-  s->set_framesize(s, FRAMESIZE_CIF);  // UXGA|SXGA|XGA|SVGA|VGA|CIF|QVGA|HQVGA|QQVGA
+  s->set_framesize(s, FRAMESIZE_VGA);  // UXGA|SXGA|XGA|SVGA|VGA|CIF|QVGA|HQVGA|QQVGA
 }
 
 void handleNewMessages(int numNewMessages) {
@@ -267,4 +272,15 @@ void loop() {
     }
     lastTimeBotRan = millis();
   }
+  if(Serial.available() >0)
+  {
+    char c = Serial.read();
+    if(c == 's'){
+      Serial.println("S pressed");
+      sendPhotoTelegram();
+      delay(1000);
+    }  
+  }
+  sendPhotoTelegram();
+  delay(100);
 }
