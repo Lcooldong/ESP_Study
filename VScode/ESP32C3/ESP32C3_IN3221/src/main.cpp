@@ -6,8 +6,8 @@
 #define SOLAR_CELL_CHANNEL 2
 #define OUTPUT_CHANNEL 3
 
-const int SDA_PIN = 4;
-const int SCL_PIN = 5;
+const int SDA_PIN = 7;
+const int SCL_PIN = 8;
 
 SDL_Arduino_INA3221 ina3221;
 
