@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width initial-scale=1.0">
+        <!-- favicon 은 브라우저 맨 위에 뜨는 아이콘임 -->
+        <link rel="icon" type="image/png" href="favicon.png" sizes="16x16">
+        <link rel="stylesheet" type="text/css" href="style.css">
+        <title>ESP32C3</title>
+        <!-- <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous"> -->
+        <script src="https://kit.fontawesome.com/b6d4087ca4.js" crossorigin="anonymous"></script>
+        <script src="script.js"></script>      
+    </head>
+    <body>
+        <h2> PC_ON_OFF </h2>
+        %BUTTONPLACEHOLDER%
+        <br>
+        <p><input type="button" class="shutdownbutton" onclick="btn_clicked(this)"></button></a></p>
+        
+        <!-- <h4>Output - GPIO 2 - State <span id="outputState"></span></h4><label class="switch"><input type="checkbox" onchange="toggleCheckbox(this)" id="output" " + outputStateValue + "><span class="slider">%BUTTONPLACEHOLDER%</span></label> -->
+    
+        <!-- <script>
+        
+            if (!!window.EventSource)
+            {
+                var source = new EventSource('/events');
+            
+                source.addEventListener('open', function(e) {
+                    console.log("Events Connected");
+                  }, false);
+                
+                  source.addEventListener('error', function(e) {
+                    if (e.target.readyState != EventSource.OPEN) {
+                      console.log("Events Disconnected");
+                    }
+                  }, false);
+                
+                  source.addEventListener('message', function(e) {
+                    console.log("message", e.data);
+                  }, false);
+            
+            
+            
+                source.addEventListener('current', function(e){
+                    // var xhr = new XMLHttpRequest();
+                    // xhr.open("GET", "/update?state=0", true);
+                    // xhr.send();
+                    // var xhttp = new XMLHttpRequest();
+                    // xhttp.onreadystatechange = function() {
+            
+                
+                    // inputChecked = false;
+                    // outputStateM = "Off";
+                    
+                    // document.getElementById("output").checked = inputChecked;
+                    // document.getElementById("outputState").innerHTML = outputStateM;
+                    // };
+                    // xhttp.open("GET", "/state", true);
+                    // xhttp.send();
+                    document.getElementById("output").checked = false;
+                    document.getElementById("outputState").innerHTML = e.data;
+                }, false);}
+        </script> -->
+    </body>
+</html>
