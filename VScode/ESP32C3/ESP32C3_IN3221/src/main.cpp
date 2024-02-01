@@ -1,18 +1,31 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include "SDL_Arduino_INA3221.h"
+#include "neopixel.h"
 
 #define LIPO_BATTERY_CHANNEL 1
 #define SOLAR_CELL_CHANNEL 2
 #define OUTPUT_CHANNEL 3
 
+
+// Not Use Yet
+const int PV_PIN = 4;
+const int CRI_PIN = 5;
+const int WAR_PIN = 6;
+const int TC_PIN = 10;
+
 const int SDA_PIN = 7;
 const int SCL_PIN = 8;
 
+
+
+
 SDL_Arduino_INA3221 ina3221;
+MyNeopixel* myNeopixel = new MyNeopixel();
 
 void setup() {
   Serial.begin(115200);
+
   Serial.println("SDA_Arduino_INA3221_Test");
   Serial.println("Measuring voltage and current with ina3221 ...");
 
@@ -23,6 +36,8 @@ void setup() {
   int MID;
   MID = ina3221.getManufID();
   Serial.println(MID,HEX);
+
+  myNeopixel->pickOneLED(0, myNeopixel->strip->Color(255, 0, 0), 50, 1);
 }
 
 void loop() {
@@ -76,6 +91,6 @@ void loop() {
   Serial.print("Output Current 3:       "); Serial.print(current_mA3); Serial.println(" mA");
   Serial.println("");
 
-  delay(2000);
+  delay(1000);
 }
 
