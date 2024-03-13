@@ -19,6 +19,9 @@
 #define SERVO_PIN 18
 //#define BTN_PIN 39
 
+#define TARGET_POS 60
+
+
 Servo myservo;
 
 int pos = 0;
@@ -62,14 +65,14 @@ void loop() {
   //     break;
   //   }
   // }
-  for(pos = 0; pos < 40; pos += 1) { // goes from 0 degrees to 180 degrees, 1 degree steps
+  for(pos = 0; pos < TARGET_POS; pos += 1) { // goes from 0 degrees to 180 degrees, 1 degree steps
       myservo.write(pos);              // tell servo to go to position in variable 'pos'
       Serial.printf("POS : %d\r\n", pos);
       delay(15);                       // waits 15ms for the servo to reach the position
     }
     delay(500);
 
-    for(pos = 40; pos>=1; pos-=1) {   // goes from 180 degrees to 0 degrees
+    for(pos = TARGET_POS; pos>=1; pos-=1) {   // goes from 180 degrees to 0 degrees
       myservo.write(pos);              // tell servo to go to position in variable 'pos'
       Serial.printf("POS : %d\r\n", pos);
       delay(15);                       // waits 15ms for the servo to reach the position
