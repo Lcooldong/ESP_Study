@@ -5,7 +5,7 @@
 //#define TCS3430
 // #define STEPPER_MOTOR
 #define TEST_BUTTON
-
+int brightnessValue = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -160,10 +160,15 @@ void loop() {
 
     case 'n':
       colorSensorFlash = true;
+      SetOutStripColor(outStrip ,0, outStrip->Color(255, 255, 255), brightnessValue++, 5);
+      Serial.printf( "B: %d\r\n",brightnessValue);
+
       break;
 
     case 'f':
       colorSensorFlash = false;
+      SetOutStripColor(outStrip ,0, outStrip->Color(255, 255, 255), brightnessValue--, 5);
+      Serial.printf( "B: %d\r\n",brightnessValue);
       break;
 
     case 'a':

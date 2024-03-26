@@ -42,43 +42,47 @@ void setup() {
 
 void loop() {
 
-  // if(Serial.available()){
-  //   char text = Serial.read();
-  //   switch (text)
-  //   {
-  //   case 'u':
-  //     pos += 1;
-  //     Serial.println(pos);
-  //     myservo.write(pos);
-  //     delay(3);
-  //     break;
-  //   case 'd':
-  //     pos -= 1;
-  //     Serial.println(pos);
-  //     myservo.write(pos);
-  //     delay(3);
-  //     break;
+  if(Serial.available()){
+    char text = Serial.read();
+    switch (text)
+    {
+    case 'u':
+      pos += 1;
+      Serial.println(pos);
+      myservo.write(pos);
+      delay(3);
+      break;
+    case 'd':
+      pos -= 1;
+      Serial.println(pos);
+      myservo.write(pos);
+      delay(3);
+      break;
     
-  //   default:
+    default:
       
       
-  //     break;
-  //   }
-  // }
-  for(pos = 0; pos < TARGET_POS; pos += 1) { // goes from 0 degrees to 180 degrees, 1 degree steps
-      myservo.write(pos);              // tell servo to go to position in variable 'pos'
-      Serial.printf("POS : %d\r\n", pos);
-      delay(15);                       // waits 15ms for the servo to reach the position
+      break;
     }
-    delay(500);
+  }
 
-    for(pos = TARGET_POS; pos>=1; pos-=1) {   // goes from 180 degrees to 0 degrees
-      myservo.write(pos);              // tell servo to go to position in variable 'pos'
-      Serial.printf("POS : %d\r\n", pos);
-      delay(15);                       // waits 15ms for the servo to reach the position
-    }
+
+
+
+  // for(pos = 0; pos < TARGET_POS; pos += 1) { // goes from 0 degrees to 180 degrees, 1 degree steps
+  //     myservo.write(pos);              // tell servo to go to position in variable 'pos'
+  //     Serial.printf("POS : %d\r\n", pos);
+  //     delay(15);                       // waits 15ms for the servo to reach the position
+  //   }
+  //   delay(500);
+
+  //   for(pos = TARGET_POS; pos>=1; pos-=1) {   // goes from 180 degrees to 0 degrees
+  //     myservo.write(pos);              // tell servo to go to position in variable 'pos'
+  //     Serial.printf("POS : %d\r\n", pos);
+  //     delay(15);                       // waits 15ms for the servo to reach the position
+  //   }
     
-    delay(500);
+  //   delay(500);
 
 
 #ifdef FULL_DEGREE
