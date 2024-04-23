@@ -20,18 +20,20 @@ Servo servo_CH1;
 void setup() {
   
   Serial.begin(115200);
-  hwSerial.begin(57600, SERIAL_8N1, 8, 7);
-  servo_CH1.attach(SERVO_CH1_PIN);
+  hwSerial.begin(115200, SERIAL_8N1, 8, 7);
+  // servo_CH1.attach(SERVO_CH1_PIN);
 
-  Mightyzap MightyZap(&hwSerial, DATA_ENABLE_PIN);
-  MightyZap.begin(32);
+  // Mightyzap MightyZap(&hwSerial, DATA_ENABLE_PIN);
+  // MightyZap.begin(32);
   
-  //Tester.begin();
-  //Tester.MightyZap.begin(32);   // Motor Baudrate 32 -> 57600 (default)  , 16 -> 115200
-  //Tester.setStep(ID_MAX, 0, 1023);
+  // //Tester.begin();
+  // //Tester.MightyZap.begin(32);   // Motor Baudrate 32 -> 57600 (default)  , 16 -> 115200
+  // //Tester.setStep(ID_MAX, 0, 1023);
 
-  // MightyZap.GoalPosition(0, 0);
-  Serial.printf("%s\r\n", MightyZap.readRaw());
+  // // MightyZap.GoalPosition(0, 0);
+  // Serial.printf("%s\r\n", MightyZap.readRaw());
+  Serial.printf("Done\r\n");
+  delay(1000);
 }
 
 void loop() {
@@ -42,6 +44,14 @@ void loop() {
   // delay(1000);
 
   // Serial.printf("%s\r\n", MightyZap.readRaw());
-  delay(1000);
+  int ch = hwSerial.read();
+  if(ch != -1)
+  {
+    // if((char)ch != '\n')
+    // {
+      Serial.printf("|%c", (char)ch);
+    // }
+  }
+
 }
 
