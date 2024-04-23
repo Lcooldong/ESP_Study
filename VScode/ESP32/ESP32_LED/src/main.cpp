@@ -46,11 +46,21 @@ void setup() {
   delay(1000);
 }
 
+
+
+
 int count = 0;
+unsigned long now = 0;
+unsigned long ledToggleTimer = 0;
+
 void loop() {
   ArduinoOTA.handle();
   ElegantOTA.loop();
 
+  if( ledState != 0)
+  {
+    now = millis();  // update
+  }
   // 100ms
   if (millis() - touchLastTime > TOUCH_SENSOR_INTERVAL)
   {
@@ -60,20 +70,38 @@ void loop() {
     touchLastTime = millis();
   }
 
+
+  if (now - ledToggleTimer >= 1000)
+  {
+
+
+  }
+
   if(ledState == 1)
   {
-    int triggerTime = millis();   // 시작 시간
-    int currentTime = 0;
-
-    ledToggle = !ledToggle;
-    Serial.printf("Toggle : %d\r\n", ledToggle);
-    digitalWrite(BUILTIN_LED, HIGH);
-    while (currentTime - triggerTime <= 1000) // 멈춰버림
+    if( ledState != digitalRead(TOUCH_SENSOR_PIN))
     {
-      currentTime = millis(); // 현재 시간
+      Serial.println("1");
     }
-    digitalWrite(BUILTIN_LED, LOW);
+    else
+    {
+      Serial.println("2");
+    }
+    // int triggerTime = millis();   // 시작 시간
+    // int currentTime = 0;
 
+    
+    // digitalWrite(BUILTIN_LED, HIGH);
+    // if (currentTime - triggerTime >= 1000) // 멈춰버림
+    // {
+    //   currentTime = millis(); // 현재 시간
+    // }
+    // else
+    // {
+    //   ledToggle = !ledToggle;
+    //   // Serial.printf("Toggle : %d\r\n", ledToggle);
+    //   digitalWrite(BUILTIN_LED, LOW);
+    // }
   }
   
  
