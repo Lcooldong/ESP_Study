@@ -1,7 +1,6 @@
 #include "mainFunc.h"
 
 
-
 #ifdef ESP32Dev
 const char* apName = "AP_ESP32Dev";
 #endif
