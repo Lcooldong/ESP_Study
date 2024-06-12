@@ -1,19 +1,20 @@
-#include "Adafruit_NeoPixel.h"
+// #include "Adafruit_NeoPixel.h"
 #include "neopixel.h"
 
-//Adafruit_NeoPixel strip;
 
 
 void MyNeopixel::InitNeopixel()
 {
     // Adafruit_NeoPixel strip(LED_COUNT, BUILTIN_LED, NEO_GRB + NEO_KHZ800);
     strip->begin();
+    
 }
 
-void MyNeopixel::pickOneLED(uint8_t ledNum, uint32_t color, uint8_t brightness, int wait){
+void MyNeopixel::pickOneLED(uint8_t ledNum, uint32_t color, uint8_t brightness, uint32_t wait){
     strip->setBrightness(brightness);
     strip->setPixelColor(ledNum, color);  
-    strip->show();                                               
+    strip->show();             
+    // ::vTaskDelay(pdMS_TO_TICKS(wait));                      
     delay(wait);
 }
 
@@ -36,6 +37,7 @@ void MyNeopixel::colorWipe(uint32_t c, uint8_t wait) {
   for(uint16_t i=0; i<strip->numPixels(); i++) {
     strip->setPixelColor(i, c);
     strip->show();
+    // ::vTaskDelay(pdMS_TO_TICKS(wait));
     delay(wait);
   }
 }
@@ -48,6 +50,7 @@ void MyNeopixel::rainbow(uint8_t wait) {
       strip->setPixelColor(i, Wheel((i+j) & 255));
     }
     strip->show();
+    // ::vTaskDelay(pdMS_TO_TICKS(wait));
     delay(wait);
   }
 }
@@ -61,6 +64,7 @@ void MyNeopixel::rainbowCycle(uint8_t wait) {
       strip->setPixelColor(i, Wheel(((i * 256 / strip->numPixels()) + j) & 255));
     }
     strip->show();
+    // ::vTaskDelay(pdMS_TO_TICKS(wait));
     delay(wait);
   }
 }
@@ -73,7 +77,7 @@ void MyNeopixel::theaterChase(uint32_t c, uint8_t wait) {
         strip->setPixelColor(i+q, c);    //turn every third pixel on
       }
       strip->show();
-
+      // ::vTaskDelay(pdMS_TO_TICKS(wait));
       delay(wait);
 
       for (uint16_t i=0; i < strip->numPixels(); i=i+3) {
@@ -91,7 +95,7 @@ void MyNeopixel::theaterChaseRainbow(uint8_t wait) {
         strip->setPixelColor(i+q, Wheel( (i+j) % 255));    //turn every third pixel on
       }
       strip->show();
-
+      // ::vTaskDelay(pdMS_TO_TICKS(wait));
       delay(wait);
 
       for (uint16_t i=0; i < strip->numPixels(); i=i+3) {

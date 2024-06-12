@@ -86,8 +86,11 @@ void setup() {
   Serial.println("START");
 }
 
-void loop() {
+uint64_t cnt = 0;
 
+void loop() {
+  Serial.println(cnt++);
+  delay(1000);
   // checkI2C(3000);
   // int x = ReadDistance(100);
   // Serial.println(x);
