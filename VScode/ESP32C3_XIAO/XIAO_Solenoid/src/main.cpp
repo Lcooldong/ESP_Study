@@ -36,7 +36,9 @@ MyNeopixel* myNeopixel = new MyNeopixel();
 void setRelay1();
 void setRelay2();
 void receiveCAN();
-
+void sendCAN(uint32_t _id, uint8_t _array[8], bool _remote);
+void testCommand();
+void photoSensing();
 
 
 
@@ -112,7 +114,7 @@ void setup() {
 void loop() {
   receiveCAN();
 
-  if(millis() - flowTime > 100)
+  if(millis() - flowTime > 1000)
   {
     CANMessage frameSend;
 
@@ -182,95 +184,9 @@ void loop() {
 
   //   delay(50);
   // }
-  
-  int ch = Serial.read();
-  
-  if(ch != -1)
-  {
-    // Serial.printf("READ : %d\r\n", ch);
-    switch (ch)
-    {
-    case 'a':
-      
-      if (led_Value >= 255)
-      {
-        led_Value = 255;
-      }
-      else
-      {
-        led_Value++;
-      }
-      Serial.printf("Value : %d\r\n", led_Value);
-      HWSERIAL.printf("LED : %d\r\n", led_Value);
-      ledcWrite(0, led_Value);
-      delay(10);
-      break;
-    case 'b':
-      
-      if (led_Value <= 0)
-      {
-        led_Value = 0;
-      }
-      else
-      {
-        led_Value--;
-      }
-      Serial.printf("Value : %d\r\n", led_Value);
-      HWSERIAL.printf("LED : %d\r\n", led_Value);
-      ledcWrite(0, led_Value);
-      delay(10);
-      break;  
-    case 'c':
-      setRelay1();
-      break;
+  testCommand();
 
-    case 'd':
-      setRelay2();
-      break;
-
-    case 'p':
-      photoFlag = !photoFlag;
-      Serial.printf("Photo Flag : %d\r\n", photoFlag); 
-      delay(500);
-      
-      break;
-
-    default:      
-      break;
-    }
- }
-
-  if(photoFlag)
-  {
-    if(millis() - photoTime > 10)
-    {
-      photoTime = millis();
-      int photoValue = digitalRead(photo_Pin);
-      Serial.printf("PHOTO : %d\r\n", photoValue);
-      HWSERIAL.printf("PHOTO : %d\r\n", photoValue);
-      if(photoValue)
-      {
-        photoCount++;
-      }
-      else
-      {
-        photoCount = 0;
-      }
-      
-
-      if(photoCount > 10)
-      {
-        photoState = 1;
-        photoFlag = 0;
-        photoCount = 0;
-      }
-      else
-      {
-        photoState = 0;
-      }
-    
-    }
-  }
+  photoSensing();
 
   // for (int i = 0; i < 255; i++)
   // {
@@ -356,3 +272,126 @@ void receiveCAN()
     Serial.println();
   }  
 }
+
+
+void sendCAN(uint32_t _id, uint8_t _array[8], bool _remote = false)
+{
+  CANMessage frameToSend;
+
+
+
+    frameToSend.id = 0x123;
+    frameToSend.rtr = _remote; //- DataFrame :전송할 데이터/ RemoteFrame : 원하는 메세지 전송 요청
+    frameToSend.len = 8; //내가 보낼 데이터의 길이
+
+  
+    for (int i = 0; i < frameToSend.len; i++)
+    {
+      frameToSend.data[i] = _array[i];
+    }
+    
+
+    //전송 16번
+    if (ACAN_ESP32::can.tryToSend(frameToSend)) {
+      //성공 
+      Serial.printf("[%d] ID:%X \r\n", gSentFrameCount++, frameToSend.id);
+    }
+}
+
+void testCommand()
+{
+  int ch = Serial.read();
+  
+  if(ch != -1)
+  {
+    // Serial.printf("READ : %d\r\n", ch);
+    switch (ch)
+    {
+    case 'a':
+      
+      if (led_Value >= 255)
+      {
+        led_Value = 255;
+      }
+      else
+      {
+        led_Value++;
+      }
+      Serial.printf("Value : %d\r\n", led_Value);
+      HWSERIAL.printf("LED : %d\r\n", led_Value);
+      ledcWrite(0, led_Value);
+      delay(10);
+      break;
+    case 'b':
+      
+      if (led_Value <= 0)
+      {
+        led_Value = 0;
+      }
+      else
+      {
+        led_Value--;
+      }
+      Serial.printf("Value : %d\r\n", led_Value);
+      HWSERIAL.printf("LED : %d\r\n", led_Value);
+      ledcWrite(0, led_Value);
+      delay(10);
+      break;  
+    case 'c':
+      setRelay1();
+      break;
+
+    case 'd':
+      setRelay2();
+      break;
+
+    case 'p':
+      photoFlag = !photoFlag;
+      Serial.printf("Photo Flag : %d\r\n", photoFlag); 
+      delay(500);
+      
+      break;
+
+    default:      
+      break;
+    }
+ }
+
+}
+
+void photoSensing()
+{
+  if(photoFlag)
+  {
+    if(millis() - photoTime > 10)
+    {
+      photoTime = millis();
+      int photoValue = digitalRead(photo_Pin);
+      Serial.printf("PHOTO : %d\r\n", photoValue);
+      HWSERIAL.printf("PHOTO : %d\r\n", photoValue);
+      if(photoValue)
+      {
+        photoCount++;
+      }
+      else
+      {
+        photoCount = 0;
+      }
+      
+
+      if(photoCount > 10)
+      {
+        photoState = 1;
+        photoFlag = 0;
+        photoCount = 0;
+        Serial.printf("해당 위치에 도달하였습니다!");
+      }
+      else
+      {
+        photoState = 0;
+      }
+    
+    }
+  }
+}
+
