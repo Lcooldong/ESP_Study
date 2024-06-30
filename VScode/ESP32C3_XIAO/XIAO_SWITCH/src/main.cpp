@@ -1,0 +1,287 @@
+#define SERVO_PIN GPIO_NUM_2
+#define SWITCH_PIN GPIO_NUM_5
+#define WIFI_CONNECTION_INTERVAL 10000
+
+#include <Arduino.h>
+
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <ESPAsyncWebServer.h>
+#include <ESPAsyncWiFiManager.h>
+#include <ESP32Servo.h>
+#include "MyLittleFS.h"
+
+MyLittleFS* mySPIFFS = new MyLittleFS();
+AsyncWebServer server(80);
+DNSServer dns;
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+Servo lightServo;
+
+const char* mqtt_server = "mqtt.m5stack.com";
+const char* light_topic = "M5Stack/LCD/ESP32C3/MYROOM/SERVO_STATE";
+
+unsigned long lastMsg = 0;
+#define MSG_BUFFER_SIZE (50)
+char msg[MSG_BUFFER_SIZE];
+char receivedMsg[MSG_BUFFER_SIZE];
+
+
+
+unsigned long flow = 0;
+bool lightState = true;
+
+unsigned long releaseTime = 0;
+unsigned long buttonTime = 0;
+bool btnToggle = false;
+bool btnPressing = false;
+bool btnRelease = false;
+uint8_t btnCount = 0;
+
+float ax, ay, az, gx, gy, gz, t;
+uint8_t num[3] = {0x00, 0x00, 0x00};
+
+int count = 0;
+unsigned long lastTime = 0;
+unsigned int interval = 1000;
+unsigned long restartTime = 4000000000;
+unsigned long beforeShutdown = 0;
+unsigned int shutdownTimeOut = 10000;
+
+void forever();
+void callback(char* topic, byte* payload, unsigned int length);
+void reConnect();
+void localSwitch();
+
+
+
+
+
+void setup() {
+
+ // myLittleFS->InitSPIFFS();
+  Serial.begin(115200);   
+  Serial.println("\r\n- Start ESP32C3 -\r\n");
+  AsyncWiFiManager wifiManager(&server,&dns);
+  
+  pinMode(SWITCH_PIN, INPUT_PULLUP);
+  
+
+  mySPIFFS->InitLitteFS();
+
+  delay(100);
+
+  mySPIFFS->listDir(LittleFS, "/", 0);
+  Serial.println("Connecting to WiFi...");
+
+  if(mySPIFFS->loadConfig(LittleFS))
+  {
+    Serial.println(mySPIFFS->ssid);
+    Serial.println(mySPIFFS->pass);
+
+    WiFi.mode(WIFI_STA); // 
+    WiFi.begin(mySPIFFS->ssid, mySPIFFS->pass);
+    Serial.println("Connect to Flash Memory");
+  }
+  else
+  {
+    //const char* ssid        = "Cooldong";
+    //const char* password    = "8ec4hkx000";
+    //WiFi.begin(ssid, password);
+    Serial.println("Saved file doesn't exist => Move to WiFiManager");
+  }
+  delay(500);
+
+  unsigned long connectionLastTime = millis();
+  while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+
+      if (millis() - connectionLastTime > WIFI_CONNECTION_INTERVAL)
+      {
+        Serial.println("Start WiFiManager => 192.168.4.1");
+
+        wifiManager.resetSettings();
+        bool wmRes = wifiManager.autoConnect("SERVO_SWITCH_1");
+        if(!wmRes)
+        {
+          Serial.println("Failed to connect");
+        }
+        else
+        {
+          Serial.printf("\nSuccess\n");
+          mySPIFFS->saveConfig(LittleFS, wifiManager.getConfiguredSTASSID(), wifiManager.getConfiguredSTAPassword());
+          delay(100);
+          ESP.restart();
+
+          break;  // Temp
+        }
+      }
+
+  }
+  
+  
+  
+  Serial.printf("\n%s\r\n", "Start MQTT Setup");
+
+  client.setServer(mqtt_server, 1883);  // Sets the server details. 
+  client.setCallback(callback);  // Sets the message callback function.  
+
+  
+  // M5.IMU.begin();
+  // Serial.printf("0x%02x\n", M5.IMU.whoAmI());
+
+
+
+
+}
+
+
+
+void loop() {
+
+  if (!client.connected()) {
+        reConnect();
+  }
+  client.loop();
+
+  localSwitch();
+
+ 
+
+
+
+  // 1초마다 상태 갱신
+  if (millis() - lastTime > interval)
+  {
+    lastTime = millis();
+    Serial.printf("Flow : %d\r\n", flow++);
+
+    client.publish(light_topic, msg);
+    if(lastTime > restartTime)
+    {
+      ESP.restart();
+    }
+  }
+
+
+}
+
+
+
+
+
+
+
+void forever(void) {
+    while (true) {
+        delay(1);
+    }    
+}
+
+
+void callback(char* topic, byte* payload, unsigned int length) {
+    Serial.print("Message arrived [");
+    Serial.print(topic);
+    Serial.print("] : ");
+    Serial.print("(");
+    Serial.print(length);
+    Serial.print(") -> ");
+    memcpy(&receivedMsg, payload, length);
+
+    Serial.printf("Data : %d =>> %s", lightState, receivedMsg);
+    Serial.println();
+    
+
+    if(!strcmp(receivedMsg, "ON"))
+    {
+      if (!lightState)
+      {
+        Serial.println("turn on Light");
+
+      }
+      
+    }
+    else if (!strcmp(receivedMsg, "OFF"))
+    {
+      if (lightState)
+      {
+        Serial.println("turn off Light");
+
+      }
+    }
+
+    memset(&receivedMsg, 0x00, length);
+
+}
+
+void reConnect() {
+    while (!client.connected()) {
+        Serial.print("Attempting MQTT connection...");
+        // Create a random client ID.  创建一个随机的客户端ID
+        String clientId = "M5Stack-";
+        clientId += String(random(0xffff), HEX);
+        // Attempt to connect.  尝试重新连接
+        if (client.connect(clientId.c_str())) {
+            Serial.println("connected");
+            // Once connected, publish an announcement to the topic.
+            client.publish(light_topic, "hello world"); // publish To Connect
+
+            client.subscribe(light_topic);    // Subsrcibe
+        } else {
+            Serial.print("failed, rc=");
+            Serial.print(client.state());
+            Serial.println("try again in 5 seconds");
+            delay(5000);
+        }
+    }
+}
+
+
+void localSwitch()
+{
+  if(millis() - buttonTime > 10)
+  {
+    buttonTime = millis();
+
+    if(!digitalRead(SWITCH_PIN))
+    {
+      if(btnCount++ >= 10)
+      {
+        btnPressing = true;
+        Serial.printf("Button Pressing \r\n");
+      }
+      else
+      {
+        btnPressing = false;
+      }
+    }
+  }
+
+  
+  if(btnPressing == false )
+  {
+    // 버튼이 눌리고 있는지 판단
+    if(millis() - releaseTime > 100)
+    {
+      releaseTime = millis();
+      btnRelease = digitalRead(SWITCH_PIN);
+
+      if(!btnRelease)
+      {
+        if(lightState)
+        {
+          snprintf(msg, MSG_BUFFER_SIZE, "ON");
+        }
+        else
+        {
+          snprintf(msg, MSG_BUFFER_SIZE, "OFF");
+        }
+      
+        lightState = !lightState;
+      }
+    }
+
+  }
+}
