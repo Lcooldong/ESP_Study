@@ -1,32 +1,40 @@
 #define SERVO_PIN GPIO_NUM_2
 #define SWITCH_PIN GPIO_NUM_5
 #define WIFI_CONNECTION_INTERVAL 10000
+#define SERVO_ON_ANGLE 30
+#define SERVO_OFF_ANGLE 0 
 
 #include <Arduino.h>
-
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ESPAsyncWebServer.h>
 #include <ESPAsyncWiFiManager.h>
 #include <ESP32Servo.h>
+#include "Button.h"
 #include "MyLittleFS.h"
 
 MyLittleFS* mySPIFFS = new MyLittleFS();
+
 AsyncWebServer server(80);
 DNSServer dns;
-
 WiFiClient espClient;
 PubSubClient client(espClient);
+
 Servo lightServo;
+int targetPos = 0;
+int currentServoPos = 0;
+unsigned long servoTime = 0;
+
+Button myBtn(SWITCH_PIN, 0, 10);  // 0 -> HIGH 
+
 
 const char* mqtt_server = "mqtt.m5stack.com";
 const char* light_topic = "M5Stack/LCD/ESP32C3/MYROOM/SERVO_STATE";
 
 unsigned long lastMsg = 0;
 #define MSG_BUFFER_SIZE (50)
-char msg[MSG_BUFFER_SIZE];
+char msg[MSG_BUFFER_SIZE] = "NOT";
 char receivedMsg[MSG_BUFFER_SIZE];
-
 
 
 unsigned long flow = 0;
@@ -37,10 +45,7 @@ unsigned long buttonTime = 0;
 bool btnToggle = false;
 bool btnPressing = false;
 bool btnRelease = false;
-uint8_t btnCount = 0;
 
-float ax, ay, az, gx, gy, gz, t;
-uint8_t num[3] = {0x00, 0x00, 0x00};
 
 int count = 0;
 unsigned long lastTime = 0;
@@ -53,7 +58,7 @@ void forever();
 void callback(char* topic, byte* payload, unsigned int length);
 void reConnect();
 void localSwitch();
-
+void rotateServo(int _targetPos, uint8_t _delay);
 
 
 
@@ -65,8 +70,8 @@ void setup() {
   Serial.println("\r\n- Start ESP32C3 -\r\n");
   AsyncWiFiManager wifiManager(&server,&dns);
   
-  pinMode(SWITCH_PIN, INPUT_PULLUP);
-  
+  pinMode(SWITCH_PIN, INPUT);
+  lightServo.attach(SERVO_PIN);
 
   mySPIFFS->InitLitteFS();
 
@@ -147,7 +152,7 @@ void loop() {
   client.loop();
 
   localSwitch();
-
+  rotateServo(targetPos, 5);
  
 
 
@@ -156,9 +161,10 @@ void loop() {
   if (millis() - lastTime > interval)
   {
     lastTime = millis();
-    Serial.printf("Flow : %d\r\n", flow++);
 
+    // Serial.printf("Flow : %d\r\n", flow++);
     client.publish(light_topic, msg);
+
     if(lastTime > restartTime)
     {
       ESP.restart();
@@ -182,7 +188,7 @@ void forever(void) {
 
 
 void callback(char* topic, byte* payload, unsigned int length) {
-    Serial.print("Message arrived [");
+    Serial.printf("[%5d] Message arrived [", flow++);
     Serial.print(topic);
     Serial.print("] : ");
     Serial.print("(");
@@ -199,7 +205,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
       if (!lightState)
       {
         Serial.println("turn on Light");
-
+        targetPos = SERVO_ON_ANGLE;
       }
       
     }
@@ -208,7 +214,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
       if (lightState)
       {
         Serial.println("turn off Light");
-
+        targetPos = SERVO_OFF_ANGLE;
       }
     }
 
@@ -241,47 +247,49 @@ void reConnect() {
 
 void localSwitch()
 {
-  if(millis() - buttonTime > 10)
-  {
-    buttonTime = millis();
+  myBtn.read();
+  
+  if (myBtn.wasReleased() || myBtn.pressedFor(1000, 200)) {
+      Serial.printf("BUTTON Pressed  200\r\n");
 
-    if(!digitalRead(SWITCH_PIN))
-    {
-      if(btnCount++ >= 10)
+      if(lightState)
       {
-        btnPressing = true;
-        Serial.printf("Button Pressing \r\n");
+        snprintf(msg, MSG_BUFFER_SIZE, "ON");
       }
       else
       {
-        btnPressing = false;
+        snprintf(msg, MSG_BUFFER_SIZE, "OFF");        
       }
-    }
-  }
+      lightState = !lightState;
 
-  
-  if(btnPressing == false )
+  }
+  else if(myBtn.wasReleasefor(700))
   {
-    // 버튼이 눌리고 있는지 판단
-    if(millis() - releaseTime > 100)
-    {
-      releaseTime = millis();
-      btnRelease = digitalRead(SWITCH_PIN);
+    Serial.printf("BUTTON Released  700\r\n");
+  }
+  else
+  {
+    // Serial.printf("BUTTON %d | %d \r\n", myBtn.isPressed());
+  }
+  
+}
 
-      if(!btnRelease)
-      {
-        if(lightState)
-        {
-          snprintf(msg, MSG_BUFFER_SIZE, "ON");
-        }
-        else
-        {
-          snprintf(msg, MSG_BUFFER_SIZE, "OFF");
-        }
-      
-        lightState = !lightState;
-      }
+void rotateServo(int _targetPos, uint8_t _delay)
+{
+  if(millis() - servoTime > _delay)
+  {
+    servoTime = millis();
+    if( currentServoPos > _targetPos) // 30 ->
+    {
+      lightServo.write(currentServoPos--);
+      Serial.printf("CURRENT : %d\r\n", currentServoPos);
+    }
+    else if (currentServoPos < _targetPos)
+    {
+      lightServo.write(currentServoPos++);
+      Serial.printf("CURRENT : %d\r\n", currentServoPos);
     }
 
   }
+  
 }
