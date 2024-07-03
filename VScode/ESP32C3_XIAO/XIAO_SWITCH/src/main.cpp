@@ -42,6 +42,7 @@ char receivedMsg[MSG_BUFFER_SIZE];
 
 unsigned long flow = 0;
 bool lightState = true;
+bool whileCallback = false;
 
 unsigned long releaseTime = 0;
 unsigned long buttonTime = 0;
@@ -167,7 +168,10 @@ void loop() {
     lastTime = millis();
 
     // Serial.printf("Flow : %d\r\n", flow++);
-    client.publish(light_topic, msg);
+    if(!whileCallback)
+    {
+      client.publish(light_topic, msg);
+    }
 
     if(lastTime > restartTime)
     {
@@ -192,14 +196,17 @@ void forever(void) {
 
 
 void callback(char* topic, byte* payload, unsigned int length) {
+
+    whileCallback = true;
+
     Serial.printf("[%5d] Message arrived [", flow++);
     Serial.print(topic);
     Serial.print("] : ");
     Serial.print("(");
     Serial.print(length);
     Serial.print(") -> ");
-    memcpy(&receivedMsg, payload, length);
-
+    memcpy( &receivedMsg, payload, length);
+    memcpy( &msg, &receivedMsg, MSG_BUFFER_SIZE);
     Serial.printf("Data : %d =>> %s", lightState, receivedMsg);
     Serial.println();
     
@@ -228,6 +235,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
       {
         Serial.println("turn on Light");
         targetPos = SERVO_ON_ANGLE;
+        
       }
       
     }
@@ -240,9 +248,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
       }
     }
 
+    lightState = !lightState;
+    
+    Serial.printf("TARGET POS => %d\r\n", targetPos);
     memcpy( &lastMsg, &receivedMsg, MSG_BUFFER_SIZE);
 
     memset(&receivedMsg, 0x00, length);
+
+    whileCallback = false;
 
 }
 
