@@ -1,4 +1,5 @@
 #define SERVO_PIN GPIO_NUM_2
+#define SERVO_POS_PIN GPIO_NUM_3
 #define SWITCH_PIN GPIO_NUM_5
 #define WIFI_CONNECTION_INTERVAL 10000
 #define SERVO_ON_ANGLE 30
@@ -22,6 +23,7 @@ PubSubClient client(espClient);
 
 Servo lightServo;
 int targetPos = 0;
+bool posChanged = false;
 int currentServoPos = 0;
 unsigned long servoTime = 0;
 
@@ -31,9 +33,10 @@ Button myBtn(SWITCH_PIN, 0, 10);  // 0 -> HIGH
 const char* mqtt_server = "mqtt.m5stack.com";
 const char* light_topic = "M5Stack/LCD/ESP32C3/MYROOM/SERVO_STATE";
 
-unsigned long lastMsg = 0;
+
 #define MSG_BUFFER_SIZE (50)
 char msg[MSG_BUFFER_SIZE] = "NOT";
+char lastMsg[MSG_BUFFER_SIZE];
 char receivedMsg[MSG_BUFFER_SIZE];
 
 
@@ -71,8 +74,7 @@ void setup() {
   AsyncWiFiManager wifiManager(&server,&dns);
   
   pinMode(SWITCH_PIN, INPUT);
-  lightServo.attach(SERVO_PIN);
-
+  // lightServo.attach(SERVO_PIN);
   mySPIFFS->InitLitteFS();
 
   delay(100);
@@ -133,7 +135,7 @@ void setup() {
   client.setServer(mqtt_server, 1883);  // Sets the server details. 
   client.setCallback(callback);  // Sets the message callback function.  
 
-  
+  // lightServo.detach();
   // M5.IMU.begin();
   // Serial.printf("0x%02x\n", M5.IMU.whoAmI());
 
@@ -150,6 +152,8 @@ void loop() {
         reConnect();
   }
   client.loop();
+
+
 
   localSwitch();
   rotateServo(targetPos, 5);
@@ -199,6 +203,24 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.printf("Data : %d =>> %s", lightState, receivedMsg);
     Serial.println();
     
+    
+    
+    if(!strcmp(receivedMsg, lastMsg))
+    {
+      posChanged = false;
+      Serial.println("Value Same!");
+    }
+    else
+    {
+      posChanged = true;
+      Serial.println("Value Changed!");
+      if(!lightServo.attached())
+      {
+        lightServo.attach(SERVO_PIN);
+        Serial.println("----Attach----");
+      }
+    }
+
 
     if(!strcmp(receivedMsg, "ON"))
     {
@@ -217,6 +239,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
         targetPos = SERVO_OFF_ANGLE;
       }
     }
+
+    memcpy( &lastMsg, &receivedMsg, MSG_BUFFER_SIZE);
 
     memset(&receivedMsg, 0x00, length);
 
@@ -249,7 +273,7 @@ void localSwitch()
 {
   myBtn.read();
   
-  if (myBtn.wasReleased() || myBtn.pressedFor(1000, 200)) {
+  if (myBtn.wasPressed() || myBtn.pressedFor(1000, 200)) {
       Serial.printf("BUTTON Pressed  200\r\n");
 
       if(lightState)
@@ -279,15 +303,31 @@ void rotateServo(int _targetPos, uint8_t _delay)
   if(millis() - servoTime > _delay)
   {
     servoTime = millis();
-    if( currentServoPos > _targetPos) // 30 ->
+    
+    if(currentServoPos == _targetPos)
     {
-      lightServo.write(currentServoPos--);
-      Serial.printf("CURRENT : %d\r\n", currentServoPos);
+
+        if(lightServo.attached())
+        {
+          Serial.println("-----Detach----");
+          if(posChanged)
+          {
+            lightServo.detach();
+          }
+          delay(100);
+          // lightServo.detach();
+        }        
+        
+    }
+    else if( currentServoPos > _targetPos) // 30 ->
+    {
+        lightServo.write(currentServoPos--);
+        Serial.printf("CURRENT : %d\r\n", currentServoPos);
     }
     else if (currentServoPos < _targetPos)
     {
-      lightServo.write(currentServoPos++);
-      Serial.printf("CURRENT : %d\r\n", currentServoPos);
+        lightServo.write(currentServoPos++);
+        Serial.printf("CURRENT : %d\r\n", currentServoPos);
     }
 
   }
