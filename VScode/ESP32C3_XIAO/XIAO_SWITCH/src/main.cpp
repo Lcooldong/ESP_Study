@@ -1,25 +1,50 @@
 #define SERVO_PIN GPIO_NUM_2
 #define SERVO_POS_PIN GPIO_NUM_3
 #define SWITCH_PIN GPIO_NUM_5
+#define SDA_PIN GPIO_NUM_6
+#define SCL_PIN GPIO_NUM_7
+#define SUB_GND GPIO_NUM_10
 #define WIFI_CONNECTION_INTERVAL 10000
 #define SERVO_ON_ANGLE 30
 #define SERVO_OFF_ANGLE 0 
+#define KOR_GMT_9 32400
+//#define DEBUG
 
 #include <Arduino.h>
-#include <WiFi.h>
 #include <PubSubClient.h>
-#include <ESPAsyncWebServer.h>
+
+
 #include <ESPAsyncWiFiManager.h>
+#include <ElegantOTA.h>
+
 #include <ESP32Servo.h>
+#include <time.h>
+
+#include <U8x8lib.h>
+#include <Wire.h>
+
 #include "Button.h"
 #include "MyLittleFS.h"
 
 MyLittleFS* mySPIFFS = new MyLittleFS();
 
 AsyncWebServer server(80);
+unsigned long ota_progress_millis = 0;
 DNSServer dns;
+AsyncWiFiManager wifiManager(&server,&dns);
 WiFiClient espClient;
 PubSubClient client(espClient);
+
+
+const char* ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = KOR_GMT_9;
+const int daylightOffset_sec = 0;
+
+String formattedDate;
+String yearStamp;
+String dayStamp;
+String timeStamp;
+
 
 Servo lightServo;
 int targetPos = 0;
@@ -34,19 +59,18 @@ const char* mqtt_server = "mqtt.m5stack.com";
 const char* light_topic = "M5Stack/LCD/ESP32C3/MYROOM/SERVO_STATE";
 
 
-#define MSG_BUFFER_SIZE (50)
+#define MSG_BUFFER_SIZE (8)
 char msg[MSG_BUFFER_SIZE] = "NOT";
 char lastMsg[MSG_BUFFER_SIZE];
 char receivedMsg[MSG_BUFFER_SIZE];
 
 
 unsigned long flow = 0;
-bool lightState = true;
+bool lightState = false;
 bool whileCallback = false;
 
 unsigned long releaseTime = 0;
 unsigned long buttonTime = 0;
-bool btnToggle = false;
 bool btnPressing = false;
 bool btnRelease = false;
 
@@ -58,25 +82,36 @@ unsigned long restartTime = 4000000000;
 unsigned long beforeShutdown = 0;
 unsigned int shutdownTimeOut = 10000;
 
+U8X8_SSD1306_128X64_NONAME_SW_I2C u8x8(/* clock=*/ SCL_PIN, /* data=*/ SDA_PIN, /* reset=*/ U8X8_PIN_NONE);
+
+void init_WiFi();
+void beginWiFiManager();
 void forever();
 void callback(char* topic, byte* payload, unsigned int length);
 void reConnect();
 void localSwitch();
 void rotateServo(int _targetPos, uint8_t _delay);
-
-
-
+void init_u8x8(const uint8_t* _font);
+void onOTAStart();
+void onOTAProgress(size_t current, size_t final);
+void onOTAEnd(bool success);
+void printLocalTime();
+void printKoreanTime();
 
 void setup() {
 
  // myLittleFS->InitSPIFFS();
   Serial.begin(115200);   
   Serial.println("\r\n- Start ESP32C3 -\r\n");
-  AsyncWiFiManager wifiManager(&server,&dns);
+  
   
   pinMode(SWITCH_PIN, INPUT);
+  pinMode(SUB_GND, OUTPUT);
+  digitalWrite(SUB_GND, LOW);
   // lightServo.attach(SERVO_PIN);
+  
   mySPIFFS->InitLitteFS();
+  init_u8x8(u8x8_font_chroma48medium8_r);
 
   delay(100);
 
@@ -85,12 +120,7 @@ void setup() {
 
   if(mySPIFFS->loadConfig(LittleFS))
   {
-    Serial.println(mySPIFFS->ssid);
-    Serial.println(mySPIFFS->pass);
-
-    WiFi.mode(WIFI_STA); // 
-    WiFi.begin(mySPIFFS->ssid, mySPIFFS->pass);
-    Serial.println("Connect to Flash Memory");
+    init_WiFi();
   }
   else
   {
@@ -100,7 +130,95 @@ void setup() {
     Serial.println("Saved file doesn't exist => Move to WiFiManager");
   }
   delay(500);
+  beginWiFiManager();
+  
 
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  // printLocalTime();
+
+
+  
+  Serial.printf("\n%s\r\n", "Start MQTT Setup");
+
+  client.setServer(mqtt_server, 1883);  // Sets the server details. 
+  client.setCallback(callback);  // Sets the message callback function.  
+
+
+
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(200, "text/plain", "Hi! This is ElegantOTA AsyncDemo.");
+  });
+
+  ElegantOTA.begin(&server);    // Start ElegantOTA
+  // ElegantOTA callbacks
+  ElegantOTA.onStart(onOTAStart);
+  ElegantOTA.onProgress(onOTAProgress);
+  ElegantOTA.onEnd(onOTAEnd);
+  server.begin();
+  // lightServo.detach();
+  Serial.printf("\r\n===============Start ESP32===============\r\n");
+}
+
+
+
+void loop() {
+
+  if (!client.connected()) {
+        reConnect();
+  }
+  client.loop();
+  ElegantOTA.loop();
+
+  localSwitch();
+  rotateServo(targetPos, 5);
+ 
+  
+  // 1초마다 상태 갱신
+  if ( millis() - lastTime > interval  && !btnPressing)
+  {
+    lastTime = millis();
+
+    printKoreanTime();
+
+    if(!whileCallback)
+    {
+      client.publish(light_topic, msg);
+    }
+
+    if(lastTime > restartTime)
+    {
+      ESP.restart();
+    }
+  }
+
+
+}
+
+
+
+
+
+
+
+
+void init_WiFi()
+{
+    Serial.println(mySPIFFS->ssid);
+    Serial.println(mySPIFFS->pass);
+
+    WiFi.mode(WIFI_STA); // 
+    WiFi.begin(mySPIFFS->ssid, mySPIFFS->pass);
+    //delay(3000);
+    Serial.printf("IP : %s\r\n", WiFi.localIP().toString().c_str());
+    Serial.println("Connect to Flash Memory");
+    u8x8.setCursor(0, 0);
+    u8x8.print("IP:");
+    u8x8.setCursor(3, 0);
+    u8x8.print(WiFi.localIP());
+}
+
+void beginWiFiManager()
+{
   unsigned long connectionLastTime = millis();
   while (WiFi.status() != WL_CONNECTED) {
       delay(500);
@@ -128,62 +246,7 @@ void setup() {
       }
 
   }
-  
-  
-  
-  Serial.printf("\n%s\r\n", "Start MQTT Setup");
-
-  client.setServer(mqtt_server, 1883);  // Sets the server details. 
-  client.setCallback(callback);  // Sets the message callback function.  
-
-  // lightServo.detach();
-  // M5.IMU.begin();
-  // Serial.printf("0x%02x\n", M5.IMU.whoAmI());
-
-
-
-
 }
-
-
-
-void loop() {
-
-  if (!client.connected()) {
-        reConnect();
-  }
-  client.loop();
-
-
-
-  localSwitch();
-  rotateServo(targetPos, 5);
- 
-
-
-
-  // 1초마다 상태 갱신
-  if (millis() - lastTime > interval)
-  {
-    lastTime = millis();
-
-    // Serial.printf("Flow : %d\r\n", flow++);
-    if(!whileCallback)
-    {
-      client.publish(light_topic, msg);
-    }
-
-    if(lastTime > restartTime)
-    {
-      ESP.restart();
-    }
-  }
-
-
-}
-
-
-
 
 
 
@@ -199,7 +262,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
     whileCallback = true;
 
-    Serial.printf("[%5d] Message arrived [", flow++);
+    Serial.printf("[%05d] Message arrived [", flow++);
     Serial.print(topic);
     Serial.print("] : ");
     Serial.print("(");
@@ -207,50 +270,56 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.print(") -> ");
     memcpy( &receivedMsg, payload, length);
     memcpy( &msg, &receivedMsg, MSG_BUFFER_SIZE);
-    Serial.printf("Data : %d =>> %s", lightState, receivedMsg);
-    Serial.println();
+    
+    Serial.printf("Data : %d =>> %s\r\n", lightState, receivedMsg);
     
     
     
     if(!strcmp(receivedMsg, lastMsg))
     {
       posChanged = false;
+#ifdef DEBUG
       Serial.println("Value Same!");
+#endif
     }
     else
     {
       posChanged = true;
+#ifdef DEBUG
       Serial.println("Value Changed!");
+#endif
       if(!lightServo.attached())
       {
         lightServo.attach(SERVO_PIN);
+#ifdef DEBUG
         Serial.println("----Attach----");
+#endif
       }
     }
 
 
-    if(!strcmp(receivedMsg, "ON"))
+    if(!strcmp(msg, "ON"))
     {
-      if (!lightState)
-      {
+#ifdef DEBUG
         Serial.println("turn on Light");
+#endif
         targetPos = SERVO_ON_ANGLE;
+        lightState = true;
         
-      }
-      
     }
-    else if (!strcmp(receivedMsg, "OFF"))
+    else if (!strcmp(msg, "OFF"))
     {
-      if (lightState)
-      {
+
+#ifdef DEBUG
         Serial.println("turn off Light");
+#endif
         targetPos = SERVO_OFF_ANGLE;
-      }
+        lightState = false;
     }
 
-    lightState = !lightState;
-    
+#ifdef DEBUG    
     Serial.printf("TARGET POS => %d\r\n", targetPos);
+#endif
     memcpy( &lastMsg, &receivedMsg, MSG_BUFFER_SIZE);
 
     memset(&receivedMsg, 0x00, length);
@@ -284,29 +353,41 @@ void reConnect() {
 
 void localSwitch()
 {
-  myBtn.read();
-  
-  if (myBtn.wasPressed() || myBtn.pressedFor(1000, 200)) {
-      Serial.printf("BUTTON Pressed  200\r\n");
 
-      if(lightState)
+  myBtn.read();
+
+  if(myBtn.pressedFor(3000,10000))
+  {
+    Serial.printf("BUTTON PressedFor 3000\r\n");
+
+  } 
+  else if(myBtn.wasReleasefor(500))
+  {
+    Serial.printf("BUTTON Released  1000\r\n"); // Button Pressing Filter
+
+  } 
+  else if (myBtn.wasReleased()) 
+  {
+      Serial.printf("BUTTON Pushed \r\n");
+
+      if(!lightState)
       {
+        Serial.printf("[ Light ON : BUTTON ]\r\n");
         snprintf(msg, MSG_BUFFER_SIZE, "ON");
+        // memcpy(msg, "ON", MSG_BUFFER_SIZE);
+        
+        lightState = true;
       }
       else
       {
-        snprintf(msg, MSG_BUFFER_SIZE, "OFF");        
+        Serial.printf("[ Light OFF : BUTTON ]\r\n");
+        snprintf(msg, MSG_BUFFER_SIZE, "OFF");   // 여러 포멧 가능
+        // memcpy(msg, "OFF", MSG_BUFFER_SIZE);  // 문자열 빠름
+        lightState = false; 
       }
-      lightState = !lightState;
-
-  }
-  else if(myBtn.wasReleasefor(700))
-  {
-    Serial.printf("BUTTON Released  700\r\n");
-  }
-  else
-  {
-    // Serial.printf("BUTTON %d | %d \r\n", myBtn.isPressed());
+      
+      Serial.printf("%s\r\n", msg);
+      client.publish(light_topic, msg); // Sync 가 안맞음
   }
   
 }
@@ -322,12 +403,14 @@ void rotateServo(int _targetPos, uint8_t _delay)
 
         if(lightServo.attached())
         {
+#ifdef DEBUG
           Serial.println("-----Detach----");
+#endif
           if(posChanged)
           {
             lightServo.detach();
           }
-          delay(100);
+          // delay(100);
           // lightServo.detach();
         }        
         
@@ -345,4 +428,84 @@ void rotateServo(int _targetPos, uint8_t _delay)
 
   }
   
+}
+
+
+void init_u8x8(const uint8_t* _font)
+{
+  u8x8.begin();
+  u8x8.setPowerSave(0);  
+  u8x8.setFont(_font);
+  u8x8.setInverseFont(0);
+}
+
+void onOTAStart() {
+  // Log when OTA has started
+  Serial.println("OTA update started!");
+  // <Add your own code here>
+}
+
+void onOTAProgress(size_t current, size_t final) {
+  // Log every 1 second
+  if (millis() - ota_progress_millis > 1000) {
+    ota_progress_millis = millis();
+    Serial.printf("OTA Progress Current: %u bytes, Final: %u bytes\n", current, final);
+  }
+}
+
+void onOTAEnd(bool success) {
+  // Log when OTA has finished
+  if (success) {
+    Serial.println("OTA update finished successfully!");
+  } else {
+    Serial.println("There was an error during OTA update!");
+  }
+  // <Add your own code here>
+}
+
+void printLocalTime(){
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time");
+    return;
+  }
+  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+  Serial.print("Day of week: ");
+  Serial.println(&timeinfo, "%A");
+  Serial.print("Month: ");
+  Serial.println(&timeinfo, "%B");
+  Serial.print("Day of Month: ");
+  Serial.println(&timeinfo, "%d");
+  Serial.print("Year: ");
+  Serial.println(&timeinfo, "%Y");
+  Serial.print("Hour: ");
+  Serial.println(&timeinfo, "%H");
+  Serial.print("Hour (12 hour format): ");
+  Serial.println(&timeinfo, "%I");
+  Serial.print("Minute: ");
+  Serial.println(&timeinfo, "%M");
+  Serial.print("Second: ");
+  Serial.println(&timeinfo, "%S");
+
+  Serial.println("Time variables");
+  char timeHour[3];
+  strftime(timeHour,3, "%H", &timeinfo);
+  Serial.println(timeHour);
+  char timeWeekDay[10];
+  strftime(timeWeekDay,10, "%A", &timeinfo);
+  Serial.println(timeWeekDay);
+  Serial.println();
+}
+
+void printKoreanTime()
+{
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time");
+    return;
+  }
+  Serial.print(&timeinfo,  "%Y/%B/%d(%A) %H:%M:%S ||");
+  
+  // int month = timeinfo.tm_mon;
+  // Serial.printf("MONTH %d\r\n",  month);
 }
