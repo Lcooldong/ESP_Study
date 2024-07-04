@@ -1,0 +1,17 @@
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
+
+#define SERVO_PIN GPIO_NUM_2
+#define SERVO_POS_PIN GPIO_NUM_3
+#define SWITCH_PIN GPIO_NUM_5
+#define SDA_PIN GPIO_NUM_6
+#define SCL_PIN GPIO_NUM_7
+#define SUB_GND GPIO_NUM_10
+#define WIFI_CONNECTION_INTERVAL 10000
+#define SERVO_ON_ANGLE 30
+#define SERVO_OFF_ANGLE 0 
+#define KOR_GMT_9 32400
+//#define DEBUG
+
+
+#endif 
