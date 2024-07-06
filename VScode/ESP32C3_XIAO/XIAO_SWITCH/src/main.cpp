@@ -4,6 +4,7 @@
 
 #include <ESPAsyncWiFiManager.h>
 #include <ElegantOTA.h>
+#include <WebSerial.h>
 
 #include <ESP32Servo.h>
 #include <time.h>
@@ -40,6 +41,7 @@ int targetPos = 0;
 bool posChanged = false;
 int currentServoPos = 0;
 unsigned long servoTime = 0;
+int servoIdleCount = 0;
 
 Button myBtn(SWITCH_PIN, 0, 10);  // 0 -> HIGH 
 
@@ -77,6 +79,7 @@ void init_WiFi();
 void beginWiFiManager();
 void forever();
 void callback(char* topic, byte* payload, unsigned int length);
+void recvMsg(uint8_t *data, size_t len);
 void reConnect();
 void localSwitch();
 void rotateServo(int _targetPos, uint8_t _delay);
@@ -86,6 +89,7 @@ void onOTAProgress(size_t current, size_t final);
 void onOTAEnd(bool success);
 void printLocalTime();
 void printKoreanTime();
+void servoAttach();
 
 void setup() {
 
@@ -130,6 +134,10 @@ void setup() {
   client.setServer(mqtt_server, 1883);  // Sets the server details. 
   client.setCallback(callback);  // Sets the message callback function.  
 
+  WebSerial.onMessage([](const String& msg) { Serial.println(msg); }); 
+  WebSerial.begin(&server);
+  WebSerial.setBuffer(128);
+  server.onNotFound([](AsyncWebServerRequest* request) { request->redirect("/webserial"); });
 
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -141,8 +149,8 @@ void setup() {
   ElegantOTA.onStart(onOTAStart);
   ElegantOTA.onProgress(onOTAProgress);
   ElegantOTA.onEnd(onOTAEnd);
+
   server.begin();
-  // lightServo.detach();
   Serial.printf("\r\n===============Start ESP32===============\r\n");
 }
 
@@ -157,7 +165,7 @@ void loop() {
   ElegantOTA.loop();
 
   localSwitch();
-  rotateServo(targetPos, 5);
+  rotateServo(targetPos, 1);
  
   
   // 1초마다 상태 갱신
@@ -248,8 +256,8 @@ void forever(void) {
 void callback(char* topic, byte* payload, unsigned int length) {
 
     whileCallback = true;
-
-    Serial.printf("[%05d] Message arrived [", flow++);
+    flow++;
+    Serial.printf("[%05d] Message arrived [", flow);
     Serial.print(topic);
     Serial.print("] : ");
     Serial.print("(");
@@ -260,6 +268,20 @@ void callback(char* topic, byte* payload, unsigned int length) {
     
     Serial.printf("Data : %d =>> %s\r\n", lightState, receivedMsg);
     
+    WebSerial.print("[");
+    WebSerial.print(flow);
+    WebSerial.print("] -> [");
+    // WebSerial.printf("[%05d] Message arrived [", flow);
+    WebSerial.print(topic);
+    WebSerial.print("] : ");
+    WebSerial.print("(");
+    WebSerial.print(length);
+    WebSerial.print(") -> ");
+    WebSerial.print("Data : ");
+    WebSerial.print(lightState);
+    WebSerial.print("=>>");
+    WebSerial.println(msg);
+    // WebSerial.printf("Data : %d =>> %s\r\n", lightState, receivedMsg);
     
     
     if(!strcmp(receivedMsg, lastMsg))
@@ -275,34 +297,47 @@ void callback(char* topic, byte* payload, unsigned int length) {
 #ifdef DEBUG
       Serial.println("Value Changed!");
 #endif
-      if(!lightServo.attached())
+      servoAttach();
+    }
+
+    if(posChanged)
+    {
+      if(!strcmp(msg, "ON"))
       {
-        lightServo.attach(SERVO_PIN);
 #ifdef DEBUG
-        Serial.println("----Attach----");
+          Serial.println("turn on Light");
 #endif
+          targetPos = SERVO_ON_ANGLE;
+          lightState = true;
+          
+      }
+      else if (!strcmp(msg, "OFF"))
+      {
+
+#ifdef DEBUG
+          Serial.println("turn off Light");
+#endif
+          targetPos = SERVO_OFF_ANGLE;
+          lightState = false;
+      }
+
+      servoIdleCount = 0;
+
+
+    }
+    else
+    {
+      servoIdleCount++;
+
+      if(servoIdleCount > SERVO_IDLE_DELAY)
+      {
+        servoAttach();
+        targetPos = SERVO_IDLE_ANGLE;
       }
     }
 
 
-    if(!strcmp(msg, "ON"))
-    {
-#ifdef DEBUG
-        Serial.println("turn on Light");
-#endif
-        targetPos = SERVO_ON_ANGLE;
-        lightState = true;
-        
-    }
-    else if (!strcmp(msg, "OFF"))
-    {
 
-#ifdef DEBUG
-        Serial.println("turn off Light");
-#endif
-        targetPos = SERVO_OFF_ANGLE;
-        lightState = false;
-    }
 
 #ifdef DEBUG    
     Serial.printf("TARGET POS => %d\r\n", targetPos);
@@ -314,6 +349,22 @@ void callback(char* topic, byte* payload, unsigned int length) {
     whileCallback = false;
 
 }
+
+void recvMsg(uint8_t *data, size_t len){
+  WebSerial.println("Received Data...");
+  String d = "";
+  for(int i=0; i < len; i++){
+    d += char(data[i]);
+  }
+  WebSerial.println(d);
+  if (d == "ON"){
+    // digitalWrite(LED, HIGH);
+  }
+  if (d=="OFF"){
+    // digitalWrite(LED, LOW);
+  }
+}
+
 
 void reConnect() {
     while (!client.connected()) {
@@ -393,10 +444,11 @@ void rotateServo(int _targetPos, uint8_t _delay)
 #ifdef DEBUG
           Serial.println("-----Detach----");
 #endif
-          if(posChanged)
+          if(servoIdleCount > SERVO_IDLE_DELAY)
           {
             lightServo.detach();
           }
+
           // delay(100);
           // lightServo.detach();
         }        
@@ -495,4 +547,15 @@ void printKoreanTime()
   
   // int month = timeinfo.tm_mon;
   // Serial.printf("MONTH %d\r\n",  month);
+}
+
+void servoAttach()
+{
+    if(!lightServo.attached())
+    {
+    lightServo.attach(SERVO_PIN);
+#ifdef DEBUG
+      Serial.println("----Attach----");
+#endif
+    }
 }
