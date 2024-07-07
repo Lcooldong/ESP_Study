@@ -249,7 +249,7 @@ void beginWiFiManager()
 void forever(void) {
     while (true) {
         delay(1);
-    }    
+    }
 }
 
 
