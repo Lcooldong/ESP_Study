@@ -30,7 +30,8 @@ int ang, lang = 0;
 //Inputs or outputs
 const int ledChannel0 = 0;
 const int ledChannel1 = 1;
-const int freq = 31250;
+// const int freq = 31250;
+const int freq = 300000;
 const int resolution = 8;
 
 const int potentiometer = A3;     // pot controls the RPM speed
@@ -73,6 +74,9 @@ float previousPID_error=0;      //This is used for the D part of the PID calcula
 float elapsedTime, currentTime, previousTime;        //Variables for time control
 int PID_Torque=0;               //Here we will store the tortal PID torque affected by the PID code
 
+
+void rotate();
+
 void setup() {
   Serial.begin(115200);
   Wire.begin();
@@ -86,12 +90,13 @@ void setup() {
 
   // TCNT : Timer/Counter Register
   // OCR : Output Compare Register
-  // ICR : Input Capture Register  (for 16bit Timer)
+  // ICR : Input Capture Register  (for 16bit Timer)  -> PWM Frequency/TOP value
   // TIMSK : Timer/Counter Interrupt Mask Register
   // TIFR : Timer/Counter Interrupt Flag Register
   // atmega168 -> 16MHz, Timer0,2 8bit | Timer1,3 16bit 
   // TCCR1B(Timer1)  TCCR2B(Timer2)
   // 0b11111000은 CS1n 값을 초기화하고 0x01 은 No Prescaling 을 의미 (x1)
+  
   // TCCR1B = TCCR1B & 0b1111,1000 | 0x01;  // fix PWM frequency at 31250 Hz for Pins 9 and 10   
   // TCCR2B = TCCR2B & 0b1111,1000 | 0x01;  // fix PWM frequency at 31250 Hz for Pins 11 and 3
   // ICR1 = 255 ;                          // 8 bit resolution
