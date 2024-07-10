@@ -9,7 +9,7 @@ const int relay_1_Pin = 21;
 const int relay_2_Pin = 20;
 const int led_Pin = 4;      // GPIO4
 const int button_Pin = 5;
-const int photo_Pin = 8;
+const int photo_Pin = GPIO_NUM_8;
 gpio_num_t can_RX = GPIO_NUM_6;
 gpio_num_t can_TX = GPIO_NUM_7;
 
@@ -389,6 +389,7 @@ void photoSensing()
       else
       {
         photoState = 0;
+        
       }
     
     }
