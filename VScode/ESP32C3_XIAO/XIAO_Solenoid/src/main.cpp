@@ -52,8 +52,8 @@ void setup() {
   pinMode(button_Pin, INPUT);   // Hardware Pull-Up
   pinMode(photo_Pin, INPUT);
 
-  //digitalWrite(relay_1_Pin, LOW);
-  //digitalWrite(relay_2_Pin, LOW);
+  digitalWrite(relay_1_Pin, LOW);
+  digitalWrite(relay_2_Pin, LOW);
 
   ledcAttachPin(led_Pin, 0);
   ledcSetup(0, 5000, 8);
