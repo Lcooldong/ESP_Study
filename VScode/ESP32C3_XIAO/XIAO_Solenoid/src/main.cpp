@@ -2,16 +2,24 @@
 #include <HardwareSerial.h>
 #include <ACAN_ESP32.h>
 #include "neopixel.h"
+#include "Button.h"
 
 #define HWSERIAL Serial1
+#define SEEED_XIAO_C3
+// #define SEEED_XIAO_S3
 
-const int relay_1_Pin = 21;
-const int relay_2_Pin = 20;
-const int led_Pin = 4;      // GPIO4
-const int button_Pin = 5;
+// C3
+#ifdef SEEED_XIAO_C3
+
+const int relay_1_Pin = GPIO_NUM_2;
+const int relay_2_Pin = GPIO_NUM_3;
+const int button_Pin = GPIO_NUM_4;
+const int led_Pin = GPIO_NUM_5;      // GPIO4
 const int photo_Pin = GPIO_NUM_8;
 gpio_num_t can_RX = GPIO_NUM_6;
 gpio_num_t can_TX = GPIO_NUM_7;
+
+#endif
 
 static const uint32_t DESIRED_BIT_RATE = 500UL * 1000UL ;
 static uint32_t gBlinkLedDate = 0 ;
@@ -30,7 +38,7 @@ int flow = 0;
 uint64_t flowTime = 0;
 
 MyNeopixel* myNeopixel = new MyNeopixel();
-
+Button myBtn(button_Pin, 0, 50);
 
 
 void setRelay1();
@@ -39,8 +47,8 @@ void receiveCAN();
 void sendCAN(uint32_t _id, uint8_t _array[8], bool _remote);
 void testCommand();
 void photoSensing();
-
-
+void localSwitch();
+int lightState = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -188,6 +196,7 @@ void loop() {
 
   photoSensing();
 
+  localSwitch();
   // for (int i = 0; i < 255; i++)
   // {
   //   ledcWrite(0, i);
@@ -396,3 +405,45 @@ void photoSensing()
   }
 }
 
+void localSwitch()
+{
+
+  myBtn.read();
+
+  if(myBtn.pressedFor(3000,5000))
+  {
+    Serial.printf("BUTTON PressedFor 3000\r\n");
+    ESP.restart();
+  } 
+  else if(myBtn.wasReleasefor(500))
+  {
+    Serial.printf("BUTTON Released  500\r\n"); // Button Pressing Filter
+
+  } 
+  else if (myBtn.wasReleased()) 
+  {
+      Serial.printf("BUTTON Pushed \r\n");
+
+      if(!lightState)
+      {
+        
+        // snprintf(msg, MSG_BUFFER_SIZE, "ON");
+        // memcpy(msg, "ON", MSG_BUFFER_SIZE);
+        
+        lightState = 1;
+        Serial.printf("[ Light ON : BUTTON ] -> %d \r\n", lightState);
+      }
+      else
+      {
+        
+        // snprintf(msg, MSG_BUFFER_SIZE, "OFF");   // 여러 포멧 가능
+        // memcpy(msg, "OFF", MSG_BUFFER_SIZE);  // 문자열 빠름
+        lightState = 0; 
+        Serial.printf("[ Light OFF : BUTTON ] -> %d\r\n", lightState);
+      }
+      
+      // Serial.printf("%s\r\n", msg);
+      
+  }
+  
+}
