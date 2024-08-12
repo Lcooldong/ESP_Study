@@ -7,6 +7,8 @@
 #include "Button.h"
 #include "config.h"
 
+
+
 const int ledChannel1 = 0;
 const int ledChannel2 = 1;
 const int ledFreq = 5000;
@@ -41,7 +43,7 @@ uint64_t count = 0;
 
 
 int lightState = 0;
-int otaStatus = 1;
+int otaStatus = 0;
 int otaStatusCount = 0;
 
 uint64_t rs485Time = 0;
@@ -66,7 +68,7 @@ EspSoftwareSerial::UART RS485;
 void setup() {
   Serial.begin(115200);
   // RS485.begin(115200, SERIAL_8N1, RS485_RX, RS485_TX);
-  RS485.begin(9600, EspSoftwareSerial::SWSERIAL_8N1, RS485_RX, RS485_TX);
+  RS485.begin(38400, EspSoftwareSerial::SWSERIAL_8N1, RS485_RX, RS485_TX);
 
   pinMode(RELAY_1_PIN, OUTPUT);
   pinMode(RELAY_2_PIN, OUTPUT);
