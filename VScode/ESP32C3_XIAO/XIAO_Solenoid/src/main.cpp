@@ -6,10 +6,20 @@
 
 #define HWSERIAL Serial1
 #define SEEED_XIAO_C3
-// #define SEEED_XIAO_S3
+//#define SEEED_XIAO_S3
 
 // C3
 #ifdef SEEED_XIAO_C3
+
+const int relay_1_Pin = GPIO_NUM_2;
+const int relay_2_Pin = GPIO_NUM_3;
+const int button_Pin = GPIO_NUM_4;
+const int led_Pin = GPIO_NUM_5;      // GPIO4
+const int photo_Pin = GPIO_NUM_8;
+gpio_num_t can_RX = GPIO_NUM_6;
+gpio_num_t can_TX = GPIO_NUM_7;
+
+#else if SEEED_XIAO_S3 
 
 const int relay_1_Pin = GPIO_NUM_2;
 const int relay_2_Pin = GPIO_NUM_3;
@@ -52,6 +62,7 @@ int lightState = 0;
 
 void setup() {
   Serial.begin(115200);
+  
   HWSERIAL.begin(115200, SERIAL_8E1, 10, 9);
   
    // RS485
