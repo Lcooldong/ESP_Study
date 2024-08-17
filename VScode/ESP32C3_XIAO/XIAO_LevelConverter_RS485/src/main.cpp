@@ -23,7 +23,7 @@ uint64_t count = 0;
 
 HardwareSerial RS485(Serial1);
 
-// EspSoftwareSerial::Config swSerialConfig = EspSoftwareSerial::SWSERIAL_8E1;
+// EspSoftwareSerial::Config swSerialConfig = EspSoftwareSerial::SWSERIAL_8N1;
 // EspSoftwareSerial::Parity parity = EspSoftwareSerial::PARITY_NONE;
 // EspSoftwareSerial::UART RS485; 
 
