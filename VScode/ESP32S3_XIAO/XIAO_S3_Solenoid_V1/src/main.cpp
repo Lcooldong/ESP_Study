@@ -15,19 +15,19 @@ const int ledFreq = 5000;
 const int ledResolution = 8;
 
 
-const int RS485_RX = GPIO_NUM_1;
-const int RS485_TX = GPIO_NUM_2;
+const int RS485_RX = D0;
+const int RS485_TX = D1;
 
-const int RELAY_1_PIN = GPIO_NUM_3;
-const int RELAY_2_PIN = GPIO_NUM_4;
+const int RELAY_1_PIN = D2;
+const int RELAY_2_PIN = D3;
 
-const int SDA_PIN = GPIO_NUM_5;
-const int SCL_PIN = GPIO_NUM_6;
+const int SDA_PIN = D4;
+const int SCL_PIN = D5;
 
-const int LIGHT_PIN = GPIO_NUM_7;
+const int LIGHT_PIN = D8;
 
-const int PHOTO_SENSOR_PIN = GPIO_NUM_8;
-const int BUTTON_PIN = GPIO_NUM_9;
+const int PHOTO_SENSOR_PIN = D9;
+const int BUTTON_PIN = D10;
 
 // const int RS485_RX = GPIO_NUM_44;
 // const int RS485_TX = GPIO_NUM_43;
@@ -52,7 +52,10 @@ int ledValue = 0;
 MyLittleFS* myFS = new MyLittleFS();
 Button myBtn(BUTTON_PIN, 0, 10);  // 0 -> HIGH 
 
-
+int photoState = 0;
+int photoFlag = 0;
+uint64_t photoTime = 0;
+int photoCount = 0;
 
 void printKoreanTime();
 void pressKey();
@@ -60,6 +63,7 @@ void breathe(uint8_t _delay);
 void localSwitch();
 void setRelay1();
 void setRelay2();
+void photoSensing();
 
 MyOTA* myOTA = new MyOTA();
 // HardwareSerial RS485(Serial0);
@@ -76,10 +80,10 @@ void setup() {
 
 
   ledcSetup(ledChannel1, ledFreq, ledResolution);
-  ledcAttachPin(LED_BUILTIN, ledChannel1); // GPIO21
+  ledcAttachPin(LED_BUILTIN, ledChannel1); 
 
   ledcSetup(ledChannel2, ledFreq, ledResolution);
-  ledcAttachPin(LIGHT_PIN, ledChannel2); // GPIO21
+  ledcAttachPin(LIGHT_PIN, ledChannel2); 
   
   for (int i = 0; i < 3; i++)
   {
@@ -232,7 +236,8 @@ void loop() {
     
   }
 
-  localSwitch();
+  // localSwitch();
+  photoSensing();
   pressKey();
   breathe(5);
   if(otaStatus)
@@ -267,19 +272,21 @@ void pressKey()
       case '1':
       {
         Serial.println("1->");
-
+        setRelay1();
         break;         
       }
   
       case '2':
       {
         Serial.println("2->");
-
+        setRelay2();
         break;
       }
 
       case '3':
         Serial.println("3->");
+        photoFlag = !photoFlag;
+        Serial.printf("Photo Flag : %d\r\n", photoFlag); 
         break;
 
       case '4':
@@ -392,4 +399,41 @@ void setRelay2()
   delay(100);
   // myNeopixel->pickOneLED(0, myNeopixel->strip->Color(0, 0, 255),10, 1 );
   Serial.printf("Release Solenoid\r\n");
+}
+
+void photoSensing()
+{
+  if(photoFlag)
+  {
+    if(millis() - photoTime > 10)
+    {
+      photoTime = millis();
+      int photoValue = digitalRead(PHOTO_SENSOR_PIN);
+      Serial.printf("PHOTO : %d\r\n", photoValue);
+      RS485.printf("PHOTO : %d\r\n", photoValue);
+      if(photoValue)
+      {
+        photoCount++;
+      }
+      else
+      {
+        photoCount = 0;
+      }
+      
+
+      if(photoCount > 10)
+      {
+        photoState = 1;
+        photoFlag = 0;
+        photoCount = 0;
+        Serial.printf("해당 위치에 도달하였습니다!");
+      }
+      else
+      {
+        photoState = 0;
+        
+      }
+    
+    }
+  }
 }
