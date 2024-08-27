@@ -31,7 +31,9 @@ HardwareSerial RS485(Serial1);
 // EspSoftwareSerial::UART RS485(RX_PIN, TX_PIN);
 // EspSoftwareSerial::Config swSerialConfig = EspSoftwareSerial::SWSERIAL_8N1;
 
-Dynamixel2Arduino dxl(RS485, DIR_PIN);
+// Dynamixel2Arduino dxl(RS485, DIR_PIN);
+Dynamixel2Arduino dxl(RS485);
+
 using namespace ControlTableItem;
 
 
