@@ -1,4 +1,7 @@
 #include "MyLittleFS.h"
+#include "MyModbus.h"
+
+extern MyModbus* myModbus;
 
 void MyLittleFS::InitLitteFS()
 {
@@ -243,6 +246,9 @@ void MyLittleFS::deleteFile2(fs::FS &fs, const char * path){
     LINE;
 }
 
+
+
+
 bool MyLittleFS::saveConfig(fs::FS &fs, String SSID, String PASS)
 {
     String configData;
@@ -292,6 +298,52 @@ bool MyLittleFS::loadConfig(fs::FS &fs)
     // passTemp.toCharArray(pass, 32);
     //strcpy(pass, passTemp.c_str());
     Serial.printf( "SSID : %s | PASS : %s\n" ,ssid, pass);
+
+    configFile.close();
+
+    return true;
+}
+
+
+bool MyLittleFS::saveSol(fs::FS &fs, int16_t sol, int16_t led)
+{   
+
+    String solData;
+    solData = String("\"SOL\":" +  String(sol) + ",\"LED\":" + String(led));
+
+    File solFile = fs.open(solenoidDataFilePath, "w");
+
+    if(!solFile)
+    {
+        Serial.println("Failed to open Data file");
+        return false;
+    }
+    solFile.println(solData);
+
+    solFile.close();
+
+    return true;
+}
+
+
+bool MyLittleFS::loadSol(fs::FS &fs)
+{   
+    File solFile = fs.open(solenoidDataFilePath, "r");
+
+    if(!solFile)
+    {
+        Serial.println("Failed to open Data file");
+        return false;
+    }
+
+    String result = solFile.readStringUntil('\n');
+
+    myModbus->holdingRegisters[1] = json_parser(result, "SOL").toInt();
+    myModbus->holdingRegisters[2] = json_parser(result, "LED").toInt();
+
+    Serial.printf("Sol : %d | LED : %d \r\n", myModbus->holdingRegisters[1], myModbus->holdingRegisters[2]);
+
+    solFile.close();
 
     return true;
 }

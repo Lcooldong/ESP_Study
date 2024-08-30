@@ -1,13 +1,21 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
+#include <SPI.h>
+#include <Wire.h>
+#include <U8g2lib.h>
 
 #include "MyLittleFS.h"
 #include "MyOTA.h"
+#include "MyModbus.h"
 
 #include "Button.h"
 #include "config.h"
 
 
+
+#define SLAVE_ID 1
+#define VERSION  2 
+#define OLED_128X32_ADDRESS 0x3C
 
 const int ledChannel1 = 0;
 const int ledChannel2 = 1;
@@ -38,62 +46,65 @@ uint64_t breathingTime = 0;
 bool breathingDirection = false;
 int breathingValue = 0;
 
+bool oledState = false;
 uint64_t lastTime = 0;
 uint64_t count = 0;
 
-
+uint64_t lightTime = 0;
 int lightState = 0;
+uint8_t lightValue = 0;
+
 int otaStatus = 0;
 int otaStatusCount = 0;
 
+uint16_t lastRelayValue = 0;
+bool relayState = false;
 uint64_t rs485Time = 0;
-int ledValue = 0;
 
-MyLittleFS* myFS = new MyLittleFS();
-Button myBtn(BUTTON_PIN, 0, 10);  // 0 -> HIGH 
 
 int photoState = 0;
 int photoFlag = 0;
 uint64_t photoTime = 0;
 int photoCount = 0;
 
+EspSoftwareSerial::UART RS485;
+
+MyOTA* myOTA = new MyOTA();
+MyLittleFS* myFS = new MyLittleFS();
+MyModbus* myModbus = new MyModbus(&RS485, SLAVE_ID);
+Button myBtn(BUTTON_PIN, 0, 10);  // 0 -> HIGH 
+U8G2_SSD1306_128X32_UNIVISION_F_SW_I2C u8g2(U8G2_R0, SCL_PIN, SDA_PIN, U8X8_PIN_NONE);
+
+
+
+
+
+void initPinout();
+void initOLED();
 void printKoreanTime();
 void pressKey();
 void breathe(uint8_t _delay);
 void localSwitch();
 void setRelay1();
 void setRelay2();
+
+void controlSolenoid();
+void setLED();
 void photoSensing();
 
-MyOTA* myOTA = new MyOTA();
+void rs485Command();
+void connectOLED(uint8_t address);
+void setOLED();
 // HardwareSerial RS485(Serial0);
-EspSoftwareSerial::UART RS485;
 
 void setup() {
   Serial.begin(115200);
   // RS485.begin(115200, SERIAL_8N1, RS485_RX, RS485_TX);
-  RS485.begin(38400, EspSoftwareSerial::SWSERIAL_8N1, RS485_RX, RS485_TX);
+  RS485.begin(9600, EspSoftwareSerial::SWSERIAL_8N1, RS485_RX, RS485_TX);
 
-  pinMode(RELAY_1_PIN, OUTPUT);
-  pinMode(RELAY_2_PIN, OUTPUT);
-  pinMode(BUTTON_PIN, INPUT);
+  initPinout();
+  initOLED();
 
-
-  ledcSetup(ledChannel1, ledFreq, ledResolution);
-  ledcAttachPin(LED_BUILTIN, ledChannel1); 
-
-  ledcSetup(ledChannel2, ledFreq, ledResolution);
-  ledcAttachPin(LIGHT_PIN, ledChannel2); 
-  
-  for (int i = 0; i < 3; i++)
-  {
-    ledcWrite(ledChannel1, 255);
-    delay(500);
-    ledcWrite(ledChannel1, 0);
-    delay(500);
-  }
-  
-  delay(100);
 
   // Find button Status
   // while (true)
@@ -113,10 +124,6 @@ void setup() {
   //   }
   // }
 
-  
-
-
-  
   if(otaStatus)
   {
     myOTA->initOTA();
@@ -129,63 +136,23 @@ void setup() {
     WebSerial.print(&timeinfo, "%Y/%B/%d(%A) %H:%M:%S :: ");
 
     WebSerial.println("OTA Start");
-    
   }
+  else
+  {
+    myFS->InitLitteFS();
 
+    delay(1000);
 
+    myFS->listDir(LittleFS, "/", 0);
+    // myFS->saveSol(LittleFS, 255, 100);
+    delay(100);
+    myFS->loadSol(LittleFS);
+  }
 }
 
 void loop() {
 
-  if(millis() - rs485Time > 1)
-  {
-    if(RS485.available())
-    {
-      char cmd = RS485.read();
-
-      switch (cmd)
-      {
-      case '1':
-        Serial.printf("RS485 : %c\r\n", cmd);
-        setRelay1();
-        break;
-      
-      case '2':
-        Serial.printf("RS485 : %c\r\n", cmd);
-        setRelay2();
-        break;
-      case '3':        
-        if(ledValue >= 255)
-        {
-          ledValue = 255;
-        }
-        else
-        {
-          ledValue++;
-        }
-        Serial.printf("RS485 : [%c] => %d\r\n", cmd, ledValue);
-        ledcWrite(ledChannel2 , ledValue);
-        break;
-      case '4':
-        if(ledValue <= 0)
-        {
-          ledValue = 0;
-        }
-        else
-        {
-          ledValue--;
-        }
-        Serial.printf("RS485 : [%c] => %d\r\n", cmd, ledValue);
-        ledcWrite(ledChannel2 , ledValue);
-        break;
-
-      default:
-        break;
-      }
-
-    }
-    rs485Time = millis();
-  }
+  
  
 
   if(millis() - lastTime > 1000)
@@ -207,7 +174,7 @@ void loop() {
     buffer += " |\r\n";
 
     // printKoreanTime();
-    Serial.print(buffer);
+    // Serial.print(buffer);
     
     // Serial.flush();
     // RS485.print(buffer);
@@ -216,29 +183,17 @@ void loop() {
     {
       textArray[i] = buffer[i];
     }
-    
-
-    // buffer.getBytes(textArray, buffer.length() + 1);
-
-    for (int i = 0; i < buffer.length(); i++)
-    {
-      RS485.write(textArray[i]);
-    }
-    
-    // RS485.write(textArray, buffer.length() + 1);
-
-    // Serial.printf(" [%d] = %d\r\n", buffer.length() + 1, sizeof(textArray));
-    // RS485.println(count);
-    
-    RS485.flush();
-    
-    // WebSerial.printf("%d : \r\n", count);
-    
+    connectOLED(OLED_128X32_ADDRESS);
   }
 
   // localSwitch();
+  myModbus->pollModbus();
+
+  controlSolenoid();
+  setLED();
   photoSensing();
   pressKey();
+  
   breathe(5);
   if(otaStatus)
   {
@@ -246,6 +201,44 @@ void loop() {
   }
 }
 
+
+
+
+
+
+void initPinout()
+{
+  pinMode(RELAY_1_PIN, OUTPUT);
+  pinMode(RELAY_2_PIN, OUTPUT);
+  pinMode(BUTTON_PIN, INPUT);
+  pinMode(PHOTO_SENSOR_PIN, INPUT);
+
+  ledcSetup(ledChannel1, ledFreq, ledResolution);
+  ledcAttachPin(LED_BUILTIN, ledChannel1); 
+
+  ledcSetup(ledChannel2, ledFreq, ledResolution);
+  ledcAttachPin(LIGHT_PIN, ledChannel2);
+
+  for (int i = 0; i < 3; i++)
+  {
+    ledcWrite(ledChannel1, 255);
+    delay(500);
+    ledcWrite(ledChannel1, 0);
+    delay(500);
+  }
+}
+
+void initOLED()
+{
+  u8g2.begin();
+  u8g2.clearBuffer();
+  u8g2.setFont(u8g2_font_ncenB08_tr);
+  u8g2.setCursor(0, 16);
+  u8g2.printf("[%d] Solenoid V%d", SLAVE_ID, VERSION);
+  u8g2.setCursor(0, 32);
+  u8g2.printf("--Start--");
+  u8g2.sendBuffer();
+}
 
 void printKoreanTime()
 {
@@ -291,6 +284,31 @@ void pressKey()
 
       case '4':
         Serial.printf("LIGHT -> %d \r\n", lightState);
+        break;
+
+      case '5':
+        if(lightValue >= 255)
+        {
+          lightValue = 255;
+        }
+        else
+        {
+          lightValue++;
+        }
+        Serial.printf("RS485 : [%c] => %d\r\n", cmd, lightValue);
+        ledcWrite(ledChannel2 , lightValue);
+        break;
+      case '6':
+        if(lightValue <= 0)
+        {
+          lightValue = 0;
+        }
+        else
+        {
+          lightValue--;
+        }
+        Serial.printf("RS485 : [%c] => %d\r\n", cmd, lightValue);
+        ledcWrite(ledChannel2 , lightValue);
         break;
 
       case 'i':
@@ -352,22 +370,26 @@ void localSwitch()
   {
       Serial.printf("BUTTON Pushed \r\n");
 
-      if(!lightState)
+      if(!relayState)
       {
         
         // snprintf(msg, MSG_BUFFER_SIZE, "ON");
         // memcpy(msg, "ON", MSG_BUFFER_SIZE);
         
-        lightState = 1;
-        Serial.printf("[ Light ON : BUTTON ] -> %d \r\n", lightState);
+        // lightState = 1;
+        setRelay1();
+        Serial.println("Button -> Relay 1");
+        // Serial.printf("[ Light ON : BUTTON ] -> %d \r\n", lightState);
       }
       else
       {
         
         // snprintf(msg, MSG_BUFFER_SIZE, "OFF");   // 여러 포멧 가능
         // memcpy(msg, "OFF", MSG_BUFFER_SIZE);  // 문자열 빠름
-        lightState = 0; 
-        Serial.printf("[ Light OFF : BUTTON ] -> %d\r\n", lightState);
+        // lightState = 0; 
+        setRelay2();
+        Serial.println("Button -> Relay 2");
+        // Serial.printf("[ Light OFF : BUTTON ] -> %d\r\n", lightState);
       }
       
       // Serial.printf("%s\r\n", msg);
@@ -385,6 +407,8 @@ void setRelay1()
   delay(100);
   digitalWrite(RELAY_1_PIN, LOW);
   delay(100);
+
+  relayState = true;
   // myNeopixel->pickOneLED(0, myNeopixel->strip->Color(0, 255, 0),10, 1 );
   Serial.printf("Push Solenoid\r\n");
 }
@@ -397,20 +421,60 @@ void setRelay2()
   delay(100);
   digitalWrite(RELAY_2_PIN, LOW);
   delay(100);
+
+  relayState = false;
   // myNeopixel->pickOneLED(0, myNeopixel->strip->Color(0, 0, 255),10, 1 );
   Serial.printf("Release Solenoid\r\n");
 }
 
+void controlSolenoid()
+{
+  if(myModbus->holdingRegisters[1] != lastRelayValue)
+  {
+    lastRelayValue = myModbus->holdingRegisters[1];
+    
+    if(myModbus->holdingRegisters[1] == 0x01)
+    {
+      setRelay1();
+      myFS->saveSol(LittleFS, myModbus->holdingRegisters[1], myModbus->holdingRegisters[3]);
+    }
+    else if(myModbus->holdingRegisters[1] == 0x02)
+    {
+      setRelay2();
+      myFS->saveSol(LittleFS, myModbus->holdingRegisters[1], myModbus->holdingRegisters[3]);
+    }
+    setOLED();
+    // myModbus->holdingRegisters[1] = 0x00; // Execute Once
+  }
+}
+
+void setLED()
+{
+  if(myModbus->holdingRegisters[2])
+  {
+    if(millis() - lightTime > 100)
+    {
+      ledcWrite(ledChannel2 , myModbus->holdingRegisters[3]);
+      myFS->saveSol(LittleFS, myModbus->holdingRegisters[1], myModbus->holdingRegisters[3]);
+      setOLED();
+      myModbus->holdingRegisters[2] = 0;  // END
+      lightTime = millis();
+    }
+    
+  }
+}
+
 void photoSensing()
 {
-  if(photoFlag)
+  // if(photoFlag)
+  if(myModbus->holdingRegisters[4])
   {
-    if(millis() - photoTime > 10)
+    if(millis() - photoTime > 50)
     {
       photoTime = millis();
       int photoValue = digitalRead(PHOTO_SENSOR_PIN);
-      Serial.printf("PHOTO : %d\r\n", photoValue);
-      RS485.printf("PHOTO : %d\r\n", photoValue);
+      // Serial.printf("PHOTO : %d\r\n", photoValue);
+      // RS485.printf("PHOTO : %d\r\n", photoValue);
       if(photoValue)
       {
         photoCount++;
@@ -423,17 +487,105 @@ void photoSensing()
 
       if(photoCount > 10)
       {
-        photoState = 1;
-        photoFlag = 0;
+        photoState = myModbus->holdingRegisters[4] + 0x01;  // 2
+        // photoFlag = 0;
         photoCount = 0;
-        Serial.printf("해당 위치에 도달하였습니다!");
+        Serial.printf("해당 위치에 도달하였습니다!\r\n");
+        myModbus->holdingRegisters[4] = 0;
       }
       else
       {
-        photoState = 0;
-        
+        photoState = 0x03;
+        Serial.printf("초기화 중\r\n");
       }
-    
+      myModbus->holdingRegisters[5] = photoState;
     }
   }
+}
+
+
+void rs485Command()
+{
+  if(millis() - rs485Time > 1)
+  {
+    if(RS485.available())
+    {
+      char cmd = RS485.read();
+
+      switch (cmd)
+      {
+      case '1':
+        Serial.printf("RS485 : %c\r\n", cmd);
+        setRelay1();
+        break;
+      
+      case '2':
+        Serial.printf("RS485 : %c\r\n", cmd);
+        setRelay2();
+        break;
+      case '3':        
+        if(lightValue >= 255)
+        {
+          lightValue = 255;
+        }
+        else
+        {
+          lightValue++;
+        }
+        Serial.printf("RS485 : [%c] => %d\r\n", cmd, lightValue);
+        ledcWrite(ledChannel2 , lightValue);
+        break;
+      case '4':
+        if(lightValue <= 0)
+        {
+          lightValue = 0;
+        }
+        else
+        {
+          lightValue--;
+        }
+        Serial.printf("RS485 : [%c] => %d\r\n", cmd, lightValue);
+        ledcWrite(ledChannel2 , lightValue);
+        break;
+
+      default:
+        break;
+      }
+
+    }
+    rs485Time = millis();
+  }
+
+}
+
+void connectOLED(uint8_t address){
+  Wire.begin();
+  Wire.beginTransmission(address);
+  byte error = Wire.endTransmission();
+  if (error == 0) 
+  {
+    // Serial.println("OLED Connected");
+    if(!oledState)
+    {
+      u8g2.begin();
+      oledState = true;
+    }
+  }
+  else
+  {
+    // Serial.println("OLED Disconnected");
+    oledState = false;    
+  }
+  Wire.end();
+}
+
+void setOLED()
+{
+  u8g2.clearBuffer();
+  u8g2.setCursor(0, 16);
+  u8g2.printf("[%d] Solenoid V%d", SLAVE_ID, VERSION);
+  u8g2.setCursor(0, 32);
+  u8g2.printf("SOL [0x%02d]|LED [%3d]|", myModbus->holdingRegisters[1], myModbus->holdingRegisters[3]);
+  u8g2.sendBuffer();
+
 }

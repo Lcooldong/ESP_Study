@@ -31,6 +31,8 @@ public:
 
     bool saveConfig(fs::FS &fs, String SSID, String PASS);
     bool loadConfig(fs::FS &fs);
+    bool saveSol(fs::FS &fs, int16_t sol, int16_t led);
+    bool loadSol(fs::FS &fs);
 
     void writeServoLog();
 
@@ -40,6 +42,7 @@ private:
     
 
     String configFilePath = "/config.txt";
+    String solenoidDataFilePath = "/myData.txt";
 
     String json_parser(String target, String key);
 };
