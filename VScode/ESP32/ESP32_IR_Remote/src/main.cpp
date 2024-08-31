@@ -50,6 +50,8 @@ uint16_t lastBits;
 
 decode_results lastResults;
 
+void get_IR_Data();
+
 void setup() {
   Serial.begin(115200);
   pinMode(BUTTON_PIN, INPUT);
@@ -62,50 +64,15 @@ void setup() {
 
 void loop() {
 
-  if(millis() - irTime > 100)
-  {
-    
-    if (irrecv.decode(&results)) {
-      // Serial.printf( "Received : 0x%X \r\n",  results.value); // Only One can read
-      serialPrintUint64(results.value, HEX);
-      Serial.println("");
-
-      lastResults = results;
-
-      Serial.printf("Bits : %d | address : %d  | %X\r\n", results.bits, results.decode_type, results.state);
-
-
-      switch (lastResults.decode_type)
-      {
-      case SAMSUNG:
-        Serial.println("SAMSUNG");
-
-        for (int i = 0; i < lastResults.rawlen; i++)
-        {
-          
-          Serial.printf("%4d |", lastResults.rawbuf[i]);
-        }
-        Serial.println("\r\n------------------------------");
-        break;
-      case LG:
-        Serial.println("LG");
-        break;
-      default:
-        break;
-      }
-   
-
-      irrecv.resume(); // Receive the next value
-    } 
-
-    irTime = millis();
-  }
+  get_IR_Data();
   
   if(millis() - countTime > 1000)
   {
     countTime = millis();
     // Serial.printf("CNT : %d\r\n", count++);
   }
+
+
 
   int btnRead = digitalRead(BUTTON_PIN);
   if(!btnRead)
@@ -192,3 +159,47 @@ void loop() {
   }
 }
 
+
+
+void get_IR_Data()
+{
+  if(millis() - irTime > 100)
+  {
+    
+    if (irrecv.decode(&results)) {
+      // Serial.printf( "Received : 0x%X \r\n",  results.value); // Only One can read
+      serialPrintUint64(results.value, HEX);
+      Serial.println("");
+
+      lastResults = results;
+
+      Serial.printf("Bits : %d | address : %d  | %X\r\n", results.bits, results.decode_type, results.state);
+
+
+      switch (lastResults.decode_type)
+      {
+      case SAMSUNG:
+        Serial.println("SAMSUNG");
+
+        for (int i = 0; i < lastResults.rawlen; i++)
+        {
+          
+          Serial.printf("%4d |", lastResults.rawbuf[i]);
+        }
+        Serial.println("\r\n------------------------------");
+        break;
+      case LG:
+        Serial.println("LG");
+        break;
+      default:
+        break;
+      }
+   
+
+      irrecv.resume(); // Receive the next value
+    } 
+
+    irTime = millis();
+  }
+
+}
