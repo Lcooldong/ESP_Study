@@ -72,7 +72,7 @@ EspSoftwareSerial::UART RS485;
 MyOTA* myOTA = new MyOTA();
 MyLittleFS* myFS = new MyLittleFS();
 MyModbus* myModbus = new MyModbus(&RS485, SLAVE_ID);
-Button myBtn(BUTTON_PIN, 0, 10);  // 0 -> HIGH 
+Button myBtn(BUTTON_PIN, true, 20);  // 0 -> HIGH , Pull-up ->Invert (true) 
 U8G2_SSD1306_128X32_UNIVISION_F_SW_I2C u8g2(U8G2_R0, SCL_PIN, SDA_PIN, U8X8_PIN_NONE);
 
 
@@ -107,35 +107,58 @@ void setup() {
 
 
   // Find button Status
-  // while (true)
-  // { 
-  //   myBtn.read();
-  //   if(myBtn.pressedFor(3000,5000))
-  //   {
-  //     otaStatus = 1;
-  //     Serial.printf("STATUS : %d ------------------------\r\n", otaStatus);
-  //     break;
-  //   }
-  //   else if (myBtn.wasReleased()) 
-  //   {
-  //     otaStatus = 0;
-  //     Serial.printf("STATUS : %d ------------------------\r\n", otaStatus);
-  //     break;
-  //   }
-  // }
+  while (true)
+  { 
+    myBtn.read();
+    if(myBtn.pressedFor(3000,5000))
+    {
+      otaStatus = 1;
+      Serial.printf("STATUS : %d ------------------------\r\n", otaStatus);
+      break;
+    }
+    else if (myBtn.wasReleased()) 
+    {
+      otaStatus = 0;
+      Serial.printf("STATUS : %d ------------------------\r\n", otaStatus);
+      break;
+    }
+    else if(myBtn.isReleased()) // Current 
+    {
+      Serial.printf("STATUS : released %d ------------------------\r\n", otaStatus);
+      break;
+    }
+  }
 
   if(otaStatus)
   {
+    u8g2.clearBuffer();
+    u8g2.setCursor(0, 16);
+    u8g2.printf("[%d] Solenoid V%d", SLAVE_ID, VERSION);
+    u8g2.setCursor(0, 32);
+    u8g2.printf("OTA Mode Start");
+    u8g2.sendBuffer();
+
     myOTA->initOTA();
 
-    struct tm timeinfo;
-    if(!getLocalTime(&timeinfo)){
-      WebSerial.println("Failed to obtain time");
-      return;
-    }
-    WebSerial.print(&timeinfo, "%Y/%B/%d(%A) %H:%M:%S :: ");
+    // struct tm timeinfo;
+    // if(!getLocalTime(&timeinfo)){
+    //   WebSerial.println("Failed to obtain time");
+    //   return;
+    // }
 
+    // WebSerial.print(&timeinfo, "%Y/%B/%d(%A) %H:%M:%S :: ");
     WebSerial.println("OTA Start");
+    Serial.println("OTA Start");
+
+    delay(1000);
+
+    u8g2.clearBuffer();
+    u8g2.setCursor(0, 16);
+    u8g2.printf("[%d] Solenoid V%d", SLAVE_ID, VERSION);
+    u8g2.setCursor(0, 32);
+    u8g2.printf("IP : %s", WiFi.localIP().toString().c_str());
+    u8g2.sendBuffer();
+
   }
   else
   {
@@ -184,20 +207,31 @@ void loop() {
       textArray[i] = buffer[i];
     }
     connectOLED(OLED_128X32_ADDRESS);
+    if(otaStatus)
+    {
+      u8g2.clearBuffer();
+      u8g2.setCursor(0, 16);
+      u8g2.printf("[%d] Solenoid V%d", SLAVE_ID, VERSION);
+      u8g2.setCursor(0, 32);
+      u8g2.printf("IP : %s", WiFi.localIP().toString().c_str());
+      u8g2.sendBuffer();
+    }   
+
   }
 
-  // localSwitch();
-  myModbus->pollModbus();
-
-  controlSolenoid();
-  setLED();
-  photoSensing();
-  pressKey();
-  
+  localSwitch();
   breathe(5);
   if(otaStatus)
   {
     myOTA->loop();
+  }
+  else
+  {
+    myModbus->pollModbus();
+    controlSolenoid();
+    setLED();
+    photoSensing();
+    pressKey(); // Debug
   }
 }
 
@@ -443,7 +477,10 @@ void controlSolenoid()
       setRelay2();
       myFS->saveSol(LittleFS, myModbus->holdingRegisters[1], myModbus->holdingRegisters[3]);
     }
+
+
     setOLED();
+
     // myModbus->holdingRegisters[1] = 0x00; // Execute Once
   }
 }
@@ -456,7 +493,9 @@ void setLED()
     {
       ledcWrite(ledChannel2 , myModbus->holdingRegisters[3]);
       myFS->saveSol(LittleFS, myModbus->holdingRegisters[1], myModbus->holdingRegisters[3]);
+
       setOLED();
+
       myModbus->holdingRegisters[2] = 0;  // END
       lightTime = millis();
     }
@@ -582,6 +621,7 @@ void connectOLED(uint8_t address){
 void setOLED()
 {
   u8g2.clearBuffer();
+  // u8g2.setFont(u8g2_font_ncenB08_tr);
   u8g2.setCursor(0, 16);
   u8g2.printf("[%d] Solenoid V%d", SLAVE_ID, VERSION);
   u8g2.setCursor(0, 32);

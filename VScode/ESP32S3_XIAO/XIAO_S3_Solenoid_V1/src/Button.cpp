@@ -33,7 +33,7 @@ Button::Button(uint8_t pin, uint8_t invert, uint32_t dbTime) {
     _pin    = pin;
     _invert = invert;
     _dbTime = dbTime;
-    pinMode(_pin, INPUT_PULLUP);
+    pinMode(_pin, INPUT);
     _state = digitalRead(_pin);
     if (_invert != 0) _state = !_state;
     _time       = millis();
