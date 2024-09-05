@@ -411,7 +411,8 @@ void localSwitch()
         // memcpy(msg, "ON", MSG_BUFFER_SIZE);
         
         // lightState = 1;
-        setRelay1();
+        // setRelay1();
+        myModbus->holdingRegisters[1] = 0x01;
         Serial.println("Button -> Relay 1");
         // Serial.printf("[ Light ON : BUTTON ] -> %d \r\n", lightState);
       }
@@ -421,11 +422,12 @@ void localSwitch()
         // snprintf(msg, MSG_BUFFER_SIZE, "OFF");   // 여러 포멧 가능
         // memcpy(msg, "OFF", MSG_BUFFER_SIZE);  // 문자열 빠름
         // lightState = 0; 
-        setRelay2();
+        // setRelay2();
+        myModbus->holdingRegisters[1] = 0x02;
         Serial.println("Button -> Relay 2");
         // Serial.printf("[ Light OFF : BUTTON ] -> %d\r\n", lightState);
       }
-      
+      setOLED();
       // Serial.printf("%s\r\n", msg);
       
   }
@@ -440,8 +442,8 @@ void setRelay1()
   digitalWrite(RELAY_1_PIN, HIGH);
   delay(100);
   digitalWrite(RELAY_1_PIN, LOW);
-  delay(100);
-
+  // delay(100);
+  myFS->saveSol(LittleFS, myModbus->holdingRegisters[1], myModbus->holdingRegisters[3]);
   relayState = true;
   // myNeopixel->pickOneLED(0, myNeopixel->strip->Color(0, 255, 0),10, 1 );
   Serial.printf("Push Solenoid\r\n");
@@ -454,8 +456,8 @@ void setRelay2()
   digitalWrite(RELAY_2_PIN, HIGH);
   delay(100);
   digitalWrite(RELAY_2_PIN, LOW);
-  delay(100);
-
+  // delay(100);
+  myFS->saveSol(LittleFS, myModbus->holdingRegisters[1], myModbus->holdingRegisters[3]);
   relayState = false;
   // myNeopixel->pickOneLED(0, myNeopixel->strip->Color(0, 0, 255),10, 1 );
   Serial.printf("Release Solenoid\r\n");
@@ -470,12 +472,12 @@ void controlSolenoid()
     if(myModbus->holdingRegisters[1] == 0x01)
     {
       setRelay1();
-      myFS->saveSol(LittleFS, myModbus->holdingRegisters[1], myModbus->holdingRegisters[3]);
+      
     }
     else if(myModbus->holdingRegisters[1] == 0x02)
     {
       setRelay2();
-      myFS->saveSol(LittleFS, myModbus->holdingRegisters[1], myModbus->holdingRegisters[3]);
+      
     }
 
 
