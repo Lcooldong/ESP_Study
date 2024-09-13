@@ -29,7 +29,7 @@ void setup() {
   Serial.println("SDA_Arduino_INA3221_Test");
   Serial.println("Measuring voltage and current with ina3221 ...");
 
-  Wire.setPins(SDA_PIN, SCL_PIN);
+  // Wire.setPins(SDA_PIN, SCL_PIN);
   ina3221.begin();
 
   Serial.print("Manufactures ID=0x");

@@ -16,6 +16,8 @@
 #define SLAVE_ID 1
 #define VERSION  2 
 #define OLED_128X32_ADDRESS 0x3C
+#define RS485_BAUDRATE 38400
+
 
 const int ledChannel1 = 0;
 const int ledChannel2 = 1;
@@ -100,7 +102,7 @@ void setOLED();
 void setup() {
   Serial.begin(115200);
   // RS485.begin(115200, SERIAL_8N1, RS485_RX, RS485_TX);
-  RS485.begin(9600, EspSoftwareSerial::SWSERIAL_8N1, RS485_RX, RS485_TX);
+  RS485.begin(RS485_BAUDRATE, EspSoftwareSerial::SWSERIAL_8N1, RS485_RX, RS485_TX);
 
   initPinout();
   initOLED();
