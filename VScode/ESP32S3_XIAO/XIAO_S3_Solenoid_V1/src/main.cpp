@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
+#include <HardwareSerial.h>
 #include <SPI.h>
 #include <Wire.h>
 #include <U8g2lib.h>
@@ -16,8 +17,9 @@
 #define SLAVE_ID 1
 #define VERSION  2 
 #define OLED_128X32_ADDRESS 0x3C
-#define RS485_BAUDRATE 38400
+#define RS485_BAUDRATE 9600
 
+// #define LED_BUILTIN D7
 
 const int ledChannel1 = 0;
 const int ledChannel2 = 1;
@@ -35,13 +37,13 @@ const int SDA_PIN = D4;
 const int SCL_PIN = D5;
 
 const int LIGHT_PIN = D8;
-
+                                                                                           
 const int PHOTO_SENSOR_PIN = D9;
 const int BUTTON_PIN = D10;
 
 // const int RS485_RX = GPIO_NUM_44;
 // const int RS485_TX = GPIO_NUM_43;
-
+#define RS485 Serial1
 
 
 uint64_t breathingTime = 0;
@@ -62,14 +64,14 @@ int otaStatusCount = 0;
 uint16_t lastRelayValue = 0;
 bool relayState = false;
 uint64_t rs485Time = 0;
-
+uint64_t solenoidTime = 0;
 
 int photoState = 0;
 int photoFlag = 0;
 uint64_t photoTime = 0;
 int photoCount = 0;
 
-EspSoftwareSerial::UART RS485;
+// EspSoftwareSerial::UART RS485;
 
 MyOTA* myOTA = new MyOTA();
 MyLittleFS* myFS = new MyLittleFS();
@@ -101,35 +103,35 @@ void setOLED();
 
 void setup() {
   Serial.begin(115200);
-  // RS485.begin(115200, SERIAL_8N1, RS485_RX, RS485_TX);
-  RS485.begin(RS485_BAUDRATE, EspSoftwareSerial::SWSERIAL_8N1, RS485_RX, RS485_TX);
+  RS485.begin(9600, SERIAL_8N1, RS485_RX, RS485_TX);
+  // RS485.begin(RS485_BAUDRATE, EspSoftwareSerial::SWSERIAL_8N1, RS485_RX, RS485_TX);
 
   initPinout();
   initOLED();
 
 
   // Find button Status
-  while (true)
-  { 
-    myBtn.read();
-    if(myBtn.pressedFor(3000,5000))
-    {
-      otaStatus = 1;
-      Serial.printf("STATUS : %d ------------------------\r\n", otaStatus);
-      break;
-    }
-    else if (myBtn.wasReleased()) 
-    {
-      otaStatus = 0;
-      Serial.printf("STATUS : %d ------------------------\r\n", otaStatus);
-      break;
-    }
-    else if(myBtn.isReleased()) // Current 
-    {
-      Serial.printf("STATUS : released %d ------------------------\r\n", otaStatus);
-      break;
-    }
-  }
+  // while (true)
+  // { 
+  //   myBtn.read();
+  //   if(myBtn.pressedFor(3000,5000))
+  //   {
+  //     otaStatus = 1;
+  //     Serial.printf("STATUS : %d ------------------------\r\n", otaStatus);
+  //     break;
+  //   }
+  //   else if (myBtn.wasReleased()) 
+  //   {
+  //     otaStatus = 0;
+  //     Serial.printf("STATUS : %d ------------------------\r\n", otaStatus);
+  //     break;
+  //   }
+  //   else if(myBtn.isReleased()) // Current 
+  //   {
+  //     Serial.printf("STATUS : released %d ------------------------\r\n", otaStatus);
+  //     break;
+  //   }
+  // }
 
   if(otaStatus)
   {
@@ -172,7 +174,10 @@ void setup() {
     // myFS->saveSol(LittleFS, 255, 100);
     delay(100);
     myFS->loadSol(LittleFS);
+
   }
+
+  // Serial.println("Done");
 }
 
 void loop() {
@@ -184,30 +189,30 @@ void loop() {
   {
     lastTime = millis();
     count++;
-    // Serial.printf("[%d]\r\n", count);
-   
-    
-    String buffer = "";
+    // Serial.printf("%d\r\n", myModbus->holdingRegisters[1]);
 
-    buffer += "[";
-    buffer += (String)count;
-    buffer += "] | S :";
-    buffer += (String)lightState;
-    buffer += " | ";
-    buffer += "] | OTA ";
-    buffer += (String)otaStatus;
-    buffer += " |\r\n";
-
-    // printKoreanTime();
-    // Serial.print(buffer);
     
-    // Serial.flush();
-    // RS485.print(buffer);
-    byte* textArray = new byte[buffer.length()]; // + 1 NULL
-    for (int i = 0; i < buffer.length(); i++)
-    {
-      textArray[i] = buffer[i];
-    }
+    // String buffer = "";
+
+    // buffer += "[";
+    // buffer += (String)count;
+    // buffer += "] | S :";
+    // buffer += (String)lightState;
+    // buffer += " | ";
+    // buffer += "] | OTA ";
+    // buffer += (String)otaStatus;
+    // buffer += " |\r\n";
+
+    // // printKoreanTime();
+    // // Serial.print(buffer);
+    
+    // // Serial.flush();
+    // // RS485.print(buffer);
+    // byte* textArray = new byte[buffer.length()]; // + 1 NULL
+    // for (int i = 0; i < buffer.length(); i++)
+    // {
+    //   textArray[i] = buffer[i];
+    // }
     connectOLED(OLED_128X32_ADDRESS);
     if(otaStatus)
     {
@@ -221,8 +226,7 @@ void loop() {
 
   }
 
-  localSwitch();
-  breathe(5);
+  
   if(otaStatus)
   {
     myOTA->loop();
@@ -233,8 +237,11 @@ void loop() {
     controlSolenoid();
     setLED();
     photoSensing();
-    pressKey(); // Debug
+    // pressKey(); // Debug
   }
+  localSwitch();
+  breathe(5);
+  // rs485Command();
 }
 
 
@@ -244,6 +251,7 @@ void loop() {
 
 void initPinout()
 {
+  // Serial.println("Set Pinout");
   pinMode(RELAY_1_PIN, OUTPUT);
   pinMode(RELAY_2_PIN, OUTPUT);
   pinMode(BUTTON_PIN, INPUT);
@@ -280,7 +288,7 @@ void printKoreanTime()
 {
   struct tm timeinfo;
   if(!getLocalTime(&timeinfo)){
-    Serial.println("Failed to obtain time");
+    // Serial.println("Failed to obtain time");
     return;
   }
   Serial.print(&timeinfo, "%Y/%B/%d(%A) %H:%M:%S :: ");
@@ -394,17 +402,17 @@ void localSwitch()
 
   if(myBtn.pressedFor(3000,5000))
   {
-    Serial.printf("BUTTON PressedFor 3000\r\n");
-    ESP.restart();
+    // Serial.printf("BUTTON PressedFor 3000\r\n");
+    // ESP.restart();
   } 
   else if(myBtn.wasReleasefor(500))
   {
-    Serial.printf("BUTTON Released  500\r\n"); // Button Pressing Filter
+    // Serial.printf("BUTTON Released  500\r\n"); // Button Pressing Filter
 
   } 
   else if (myBtn.wasReleased()) 
   {
-      Serial.printf("BUTTON Pushed \r\n");
+      // Serial.printf("BUTTON Pushed \r\n");
 
       if(!relayState)
       {
@@ -415,7 +423,7 @@ void localSwitch()
         // lightState = 1;
         // setRelay1();
         myModbus->holdingRegisters[1] = 0x01;
-        Serial.println("Button -> Relay 1");
+        // Serial.println("Button -> Relay 1");
         // Serial.printf("[ Light ON : BUTTON ] -> %d \r\n", lightState);
       }
       else
@@ -426,7 +434,7 @@ void localSwitch()
         // lightState = 0; 
         // setRelay2();
         myModbus->holdingRegisters[1] = 0x02;
-        Serial.println("Button -> Relay 2");
+        // Serial.println("Button -> Relay 2");
         // Serial.printf("[ Light OFF : BUTTON ] -> %d\r\n", lightState);
       }
       setOLED();
@@ -439,30 +447,46 @@ void localSwitch()
 
 void setRelay1()
 {
+  // unsigned long currentSolTime = millis();
+  // if(digitalRead(RELAY_1_PIN) == LOW && currentSolTime - solenoidTime >= 50)
+  // {
+  //   digitalWrite(RELAY_1_PIN, HIGH);
+  //   solenoidTime = currentSolTime;
+  // }
+  // else if(digitalRead(RELAY_1_PIN) == HIGH && currentSolTime - solenoidTime >= 100)
+  // {
+  //   digitalWrite(RELAY_1_PIN, LOW);
+  //   solenoidTime = currentSolTime;
+  //   myFS->saveSol(LittleFS, myModbus->holdingRegisters[1], myModbus->holdingRegisters[3]);
+  //   relayState = true;  
+  // }
   digitalWrite(RELAY_1_PIN, LOW);
-  delay(100);
+  delay(50);
   digitalWrite(RELAY_1_PIN, HIGH);
-  delay(100);
+  delay(50);
   digitalWrite(RELAY_1_PIN, LOW);
-  // delay(100);
+
+
+
+
   myFS->saveSol(LittleFS, myModbus->holdingRegisters[1], myModbus->holdingRegisters[3]);
   relayState = true;
   // myNeopixel->pickOneLED(0, myNeopixel->strip->Color(0, 255, 0),10, 1 );
-  Serial.printf("Push Solenoid\r\n");
+  // Serial.printf("Push Solenoid\r\n");
 }
 
 void setRelay2()
 {
   digitalWrite(RELAY_2_PIN, LOW);
-  delay(100);
+  delay(50);
   digitalWrite(RELAY_2_PIN, HIGH);
-  delay(100);
+  delay(50);
   digitalWrite(RELAY_2_PIN, LOW);
-  // delay(100);
+  
   myFS->saveSol(LittleFS, myModbus->holdingRegisters[1], myModbus->holdingRegisters[3]);
   relayState = false;
   // myNeopixel->pickOneLED(0, myNeopixel->strip->Color(0, 0, 255),10, 1 );
-  Serial.printf("Release Solenoid\r\n");
+  // Serial.printf("Release Solenoid\r\n");
 }
 
 void controlSolenoid()
@@ -533,13 +557,13 @@ void photoSensing()
         photoState = myModbus->holdingRegisters[4] + 0x01;  // 2
         // photoFlag = 0;
         photoCount = 0;
-        Serial.printf("해당 위치에 도달하였습니다!\r\n");
+        // Serial.printf("해당 위치에 도달하였습니다!\r\n");
         myModbus->holdingRegisters[4] = 0;
       }
       else
       {
         photoState = 0x03;
-        Serial.printf("초기화 중\r\n");
+        // Serial.printf("초기화 중\r\n");
       }
       myModbus->holdingRegisters[5] = photoState;
     }

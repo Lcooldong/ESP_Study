@@ -116,10 +116,9 @@ void MyModbus::pollModbus()
     {
       rs485Time = millis();
       int ch = RS485->read();
-
       uint16_t coil_register_count = 0;
       uint16_t startAddress = 0;
-
+    
       if(ch != -1)
       {
 #ifdef DEBUG_MODBUS
@@ -132,7 +131,7 @@ void MyModbus::pollModbus()
 
       if(ch == _slave_id && readCount == 0)
       {
-        // Serial.printf("[%d]ID         : 0x%X\r\n", readCount, SLAVE_ID);
+        // Serial.printf("[%d]ID         : 0x%X\r\n", readCount, 0x01);
         recv[0] = _slave_id;
         readCount = 1;
       }
@@ -171,8 +170,8 @@ void MyModbus::pollModbus()
 
           if(crcReceived[0] == recv[readCount - 2] && crcReceived[1] == recv[readCount -1])
           {
-            getFunctionCode();
-            printPacket(readCount);
+            // getFunctionCode();
+            // printPacket(readCount);
 
             switch (fc){
 
@@ -231,7 +230,7 @@ void MyModbus::pollModbus()
               break;
             } 
 
-            Serial.printf("Receive Complete \r\n");
+            // Serial.printf("Receive Complete \r\n");
             receivedFlag = true;
             readCount = 0;
           }
@@ -241,7 +240,7 @@ void MyModbus::pollModbus()
       if(receivedFlag)
       {
         startAddress = recv[2] * 256 + recv[3];
-        Serial.printf("StartAddress : %d\r\n", startAddress);
+        // Serial.printf("StartAddress : %d\r\n", startAddress);
       }
 
       
@@ -455,7 +454,7 @@ void MyModbus::readHoldingRegisters(uint16_t startAddress, uint16_t count)
   registersByte[1] = recv[1];
   registersByte[2] = holdingBytes;
 
-  Serial.printf("READING Bytes : [%d]\r\n", holdingBytes);
+  // Serial.printf("READING Bytes : [%d]\r\n", holdingBytes);
 
 
 
@@ -463,7 +462,7 @@ void MyModbus::readHoldingRegisters(uint16_t startAddress, uint16_t count)
   {
     registersByte[i*2 + 3] = holdingRegisters[startAddress + i] >> 8;
     registersByte[i*2 + 4] = holdingRegisters[startAddress + i] & 0xFF;
-    Serial.printf("REGISTERS : 0x%02X | 0x%02X\r\n", registersByte[i*2 + 3], registersByte[i*2 + 4]);
+    // Serial.printf("REGISTERS : 0x%02X | 0x%02X\r\n", registersByte[i*2 + 3], registersByte[i*2 + 4]);
   }
   
   
@@ -473,12 +472,12 @@ void MyModbus::readHoldingRegisters(uint16_t startAddress, uint16_t count)
   registersByte[sizeof(registersByte) - 2] = crcReadCoil[0];
   registersByte[sizeof(registersByte) - 1] = crcReadCoil[1];
 
-  Serial.println("\r\n===============ReadCoil RX===============");
-  for (uint8_t i = 0; i < sizeof(registersByte); i++)
-  {
-    Serial.printf("0x%02X ", registersByte[i]);
-  }
-  Serial.println("\r\n===========================================");
+  // Serial.println("\r\n===============ReadCoil RX===============");
+  // for (uint8_t i = 0; i < sizeof(registersByte); i++)
+  // {
+  //   Serial.printf("0x%02X ", registersByte[i]);
+  // }
+  // Serial.println("\r\n===========================================");
 
   RS485->write(registersByte, sizeof(registersByte));
   RS485->flush(); 
@@ -505,7 +504,7 @@ void MyModbus::writeSingleCoil(uint16_t startAddress)
     my_Coils[startAddress] = 0x00;
   }
   
-  Serial.printf("WRItE : 0x%X\r\n", my_Coils[startAddress]);
+  // Serial.printf("WRItE : 0x%X\r\n", my_Coils[startAddress]);
   RS485->write(recv, DEFAULT_LENGTH);
   RS485->flush(); 
 }
@@ -516,7 +515,7 @@ void MyModbus::writeSingleRegister(uint16_t startAddress, uint16_t register_valu
 {
     holdingRegisters[startAddress] = register_value;
 
-    Serial.printf("Changed Registers[%d] : %d\r\n", startAddress, holdingRegisters[startAddress]);
+    // Serial.printf("Changed Registers[%d] : %d\r\n", startAddress, holdingRegisters[startAddress]);
 
     RS485->write(recv, DEFAULT_LENGTH);
     RS485->flush(); 
@@ -526,18 +525,18 @@ void MyModbus::writeSingleRegister(uint16_t startAddress, uint16_t register_valu
 
 void MyModbus::writeMultipleRegisters(uint16_t startAddress,  uint8_t data_count)
 {
-  Serial.printf("Write MULTIPLE Start -> 0x%02X | Byte : [%d] \r\n", startAddress, data_count);
+  // Serial.printf("Write MULTIPLE Start -> 0x%02X | Byte : [%d] \r\n", startAddress, data_count);
 
   uint16_t numberOfData = data_count / 2 ;
 //   uint16_t receivedData[numberOfData] = {0,};
 
-  Serial.print("Holding => ");
+  // Serial.print("Holding => ");
   for (uint16_t i = 0; i < numberOfData; i++)
   {
     holdingRegisters[startAddress + i] = (recv[MULTIPLE_DATA_START + 2 * i] << 8) + recv[MULTIPLE_DATA_START + 2 * i + 1];
-    Serial.printf("%d | ", holdingRegisters[startAddress + i]);
+    // Serial.printf("%d | ", holdingRegisters[startAddress + i]);
   }
-  Serial.printf("\r\n========================================\r\n");
+  // Serial.printf("\r\n========================================\r\n");
 
 
 
