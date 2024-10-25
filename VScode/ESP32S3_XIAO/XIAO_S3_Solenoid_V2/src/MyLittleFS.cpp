@@ -1,7 +1,8 @@
 #include "MyLittleFS.h"
-#include "MyModbus.h"
 
-extern MyModbus* myModbus;
+
+extern int solenoidState;
+extern uint8_t lightValue;
 
 void MyLittleFS::InitLitteFS()
 {
@@ -337,11 +338,14 @@ bool MyLittleFS::loadSol(fs::FS &fs)
     }
 
     String result = solFile.readStringUntil('\n');
+    
+    solenoidState = json_parser(result, "SOL").toInt();
+    lightValue = json_parser(result, "LED").toInt();
+    Serial.printf("Sol : %d | LED : %d \r\n", solenoidState, lightValue);
+    // myModbus->holdingRegisters[1] = json_parser(result, "SOL").toInt();
+    // myModbus->holdingRegisters[2] = json_parser(result, "LED").toInt();
 
-    myModbus->holdingRegisters[1] = json_parser(result, "SOL").toInt();
-    myModbus->holdingRegisters[2] = json_parser(result, "LED").toInt();
-
-    Serial.printf("Sol : %d | LED : %d \r\n", myModbus->holdingRegisters[1], myModbus->holdingRegisters[2]);
+    // Serial.printf("Sol : %d | LED : %d \r\n", myModbus->holdingRegisters[1], myModbus->holdingRegisters[2]);
     
     solFile.close();
 
