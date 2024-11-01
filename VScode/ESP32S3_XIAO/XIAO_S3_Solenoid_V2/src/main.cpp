@@ -93,9 +93,10 @@ int otaStatusCount = 0;
 
 uint16_t lastRelayValue = 0;
 bool relayState = false;
-uint64_t rs485Time = 0;
-uint64_t solenoidTime = 0;
-
+uint32_t rs485Time = 0;
+uint32_t solenoidTime = 0;
+uint32_t relayTime = 0;
+bool relayToggle = false;
 
 
 bool photoState = false;
@@ -264,65 +265,71 @@ void sendSolPacket(byte myRequest)
   sendPacket.PHOTO_STATE = photoTrigger;
 
   RS485.write((uint8_t*)&sendPacket, sizeof(sendPacket));
+  // Serial.println("Send Packet !!");
 }
 
 void receivePacket()
 {
-  if(RS485.available())
+  if(millis() - rs485Time >= 1)
   {
-    RS485.readBytes(recv, structSize);
-    for (int i = 0; i < structSize; i++)
+    if(RS485.available())
     {
-      Serial.printf(" 0x%02X | ", recv[i]);
-    }
-    Serial.println();
-    
-    receivedPacket.REQUEST = recv[1];
-    receivedPacket.LED_BRIGHTNESS = recv[2];
-    // receivedPacket.SOLENOID_STATE = recv[3];
-
-    if(recv[0] == PACKET_STX && recv[structSize - 1] == PACKET_ETX)
-    {
-      switch (receivedPacket.REQUEST)
+      RS485.readBytes(recv, structSize);
+      for (int i = 0; i < structSize; i++)
       {
-      case LED_CHANGED:
-        lightState = true;
-        lightValue = receivedPacket.LED_BRIGHTNESS;
-        Serial.printf("LED Value = %d\r\n", lightValue);
-        break;
-
-      case SOL_PUSH:
-        Serial.println("RX : Push");
-        solenoidState = SOL_PUSH;
-
-        break;
-      case SOL_RELEASE:
-        Serial.println("RX : Release");
-        solenoidState = SOL_RELEASE;
-
-        break;
-      case PHOTO_START:
-        Serial.println("RX : Photo Start");
-        photoState = true;
-        break;
-
-      case PHOTO_STOP:
-        Serial.println("RX : Photo Stop");
-        photoState = false;
-        break;
+        Serial.printf(" 0x%02X | ", recv[i]);
+      }
+      Serial.println();
       
-      case REQUEST_DATA:
-        Serial.println("Return Data");
-        sendSolPacket(RETURN_DATA);
+      receivedPacket.REQUEST = recv[1];
+      receivedPacket.LED_BRIGHTNESS = recv[2];
+      // receivedPacket.SOLENOID_STATE = recv[3];
 
-      default:
-        break;
+      if(recv[0] == PACKET_STX && recv[structSize - 1] == PACKET_ETX)
+      {
+        switch (receivedPacket.REQUEST)
+        {
+        case LED_CHANGED:
+          lightState = true;
+          lightValue = receivedPacket.LED_BRIGHTNESS;
+          Serial.printf("LED Value = %d\r\n", lightValue);
+          break;
+
+        case SOL_PUSH:
+          Serial.println("RX : Push");
+          solenoidState = SOL_PUSH;
+
+          break;
+        case SOL_RELEASE:
+          Serial.println("RX : Release");
+          solenoidState = SOL_RELEASE;
+
+          break;
+        case PHOTO_START:
+          Serial.println("RX : Photo Start");
+          photoState = true;
+          break;
+
+        case PHOTO_STOP:
+          Serial.println("RX : Photo Stop");
+          photoState = false;
+          break;
+        
+        case REQUEST_DATA:
+          Serial.println("Return Data");
+          sendSolPacket(RETURN_DATA);
+
+        default:
+          break;
+        }
+
       }
 
+      
     }
-
-
+    rs485Time = millis();
   }
+  
 }
 
 void initPinout()
@@ -488,7 +495,7 @@ void localSwitch()
   } 
   else if (myBtn.wasReleased()) 
   {
-      // Serial.printf("BUTTON Pushed \r\n");
+      Serial.printf("BUTTON Pushed \r\n");
 
       if(!relayState)
       {
@@ -498,6 +505,8 @@ void localSwitch()
       {      
         solenoidState = SOL_RELEASE;
       }
+
+      // relayToggle = true;
 
       // Serial.println("Button -> Save Sol and Led");
       Serial.printf("Sol : 0x%02X | LED : %3d \r\n", solenoidState, lightValue);
@@ -512,29 +521,6 @@ void localSwitch()
 
 void setRelay1()
 {
-  // unsigned long currentSolTime = millis();
-  // if(digitalRead(RELAY_1_PIN) == LOW && currentSolTime - solenoidTime >= 50)
-  // {
-  //   digitalWrite(RELAY_1_PIN, HIGH);
-  //   solenoidTime = currentSolTime;
-  // }
-  // else if(digitalRead(RELAY_1_PIN) == HIGH && currentSolTime - solenoidTime >= 100)
-  // {
-  //   digitalWrite(RELAY_1_PIN, LOW);
-  //   solenoidTime = currentSolTime;
-  //   myFS->saveSol(LittleFS, myModbus->holdingRegisters[1], myModbus->holdingRegisters[3]);
-  //   relayState = true;  
-  // }
-  digitalWrite(RELAY_1_PIN, LOW);
-  delay(50);
-  digitalWrite(RELAY_1_PIN, HIGH);
-  delay(50);
-  digitalWrite(RELAY_1_PIN, LOW);
-
-
-
-
-  myFS->saveSol(LittleFS, solenoidState, lightValue);
   relayState = true;
   // myNeopixel->pickOneLED(0, myNeopixel->strip->Color(0, 255, 0),10, 1 );
   // Serial.printf("Push Solenoid\r\n");
@@ -542,13 +528,6 @@ void setRelay1()
 
 void setRelay2()
 {
-  digitalWrite(RELAY_2_PIN, LOW);
-  delay(50);
-  digitalWrite(RELAY_2_PIN, HIGH);
-  delay(50);
-  digitalWrite(RELAY_2_PIN, LOW);
-  
-  myFS->saveSol(LittleFS, solenoidState, lightValue);
   relayState = false;
   // myNeopixel->pickOneLED(0, myNeopixel->strip->Color(0, 0, 255),10, 1 );
   // Serial.printf("Release Solenoid\r\n");
@@ -560,22 +539,43 @@ void controlSolenoid()
   {
     lastRelayValue = solenoidState;
     
+    if(solenoidState == SOL_PUSH || solenoidState == SOL_RELEASE)
+    {
+      relayToggle = true;
+    }
+    
+    // myModbus->holdingRegisters[1] = 0x00; // Execute Once
+    myFS->saveSol(LittleFS, solenoidState, lightValue);
+  }
+
+
+  if(relayToggle == true && millis() - relayTime >= 50)
+  {
+    relayTime = millis();
     if(solenoidState == SOL_PUSH)
     {
-      setRelay1();
-      
+      digitalWrite(RELAY_1_PIN, HIGH);
+      Serial.println("Sol - 1 toggle ON");
+      relayState = true;
     }
     else if(solenoidState == SOL_RELEASE)
     {
-      setRelay2();
-      
+      digitalWrite(RELAY_2_PIN, HIGH);
+      Serial.println("Sol - 2 toggle ON");
+      relayState = false;
     }
-
-
-    setOLED();
-
-    // myModbus->holdingRegisters[1] = 0x00; // Execute Once
+    relayToggle = false;
+    
   }
+  else if(relayToggle == false && millis() - relayTime >= 50)
+  {
+    relayTime = millis();
+    digitalWrite(RELAY_1_PIN, LOW);
+    digitalWrite(RELAY_2_PIN, LOW);
+    // Serial.println("Sol toggle OFF");
+  }
+
+  // setOLED();
 }
 
 void setLED()
@@ -601,8 +601,8 @@ void photoSensing()
   // if(photoFlag)
   if(photoState)
   {
-    Serial.printf("Start photo: %d\r\n", photoState);
-    if(millis() - photoTime > 50)
+    // Serial.printf("Start photo: %d\r\n", photoState);
+    if(millis() - photoTime >= 50)
     {
 
       photoTime = millis();
@@ -632,8 +632,7 @@ void photoSensing()
       {
         photoTrigger = PHOTO_READING;
         sendSolPacket(PHOTO_READING);
-      }
-      
+      }      
     }
   }
 }
@@ -641,7 +640,7 @@ void photoSensing()
 
 void rs485Command()
 {
-  if(millis() - rs485Time > 1)
+  if(millis() - rs485Time >= 1)
   {
     if(RS485.available())
     {
