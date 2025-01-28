@@ -266,6 +266,28 @@ bool MyLittleFS::saveConfig(fs::FS &fs, String SSID, String PASS)
     return true;
 }
 
+bool MyLittleFS::saveMotorValue(fs::FS &fs, int stateValue)
+{
+    String configData;
+
+    motorValue = stateValue;
+    configData = String("\"MOTOR\":" + String(stateValue)); // 값 추가
+
+    File configFile = fs.open(motorStatePath, "w");
+    if (!configFile) 
+    {
+        Serial.println("Failed to open config file for writing");
+        return false;
+    }
+    configFile.println(configData); // 파일 쓰기
+    
+    configFile.close();
+
+    return true;
+}
+
+
+
 bool MyLittleFS::loadConfig(fs::FS &fs)
 {
     File configFile = fs.open(configFilePath, "r");
@@ -292,6 +314,26 @@ bool MyLittleFS::loadConfig(fs::FS &fs)
     // passTemp.toCharArray(pass, 32);
     //strcpy(pass, passTemp.c_str());
     Serial.printf( "SSID : %s | PASS : %s\n" ,ssid, pass);
+
+    configFile.close();
+
+    return true;
+}
+
+bool MyLittleFS::loadMotorValue(fs::FS &fs)
+{
+    File motorValueFile = fs.open(motorStatePath, "r");
+    if(!motorValueFile)
+    {
+        Serial.println("Failed to open config file");
+        return false;
+    }
+
+    String value = motorValueFile.readStringUntil('\n');
+    motorValue = json_parser(value, "MOTOR").toInt();
+
+    Serial.printf( "MOTOR : %d\n" ,motorValue);
+    motorValueFile.close();
 
     return true;
 }

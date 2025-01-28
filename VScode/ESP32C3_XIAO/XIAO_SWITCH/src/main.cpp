@@ -122,7 +122,14 @@ void setup() {
   }
   delay(500);
   beginWiFiManager();
-  
+  if(mySPIFFS->loadMotorValue(LittleFS))
+  { 
+    targetPos = mySPIFFS->motorValue;
+  }
+  else
+  {
+    targetPos = SERVO_IDLE_ANGLE;
+  }
 
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   // printLocalTime();
@@ -335,7 +342,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
         targetPos = SERVO_IDLE_ANGLE;
       }
     }
-
+    mySPIFFS->saveMotorValue(LittleFS, targetPos);
+    Serial.println("Save Motor value");
 
 
 

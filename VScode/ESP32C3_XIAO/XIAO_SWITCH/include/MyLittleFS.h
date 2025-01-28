@@ -30,16 +30,21 @@ public:
     void deleteFile2(fs::FS &fs, const char * path);
 
     bool saveConfig(fs::FS &fs, String SSID, String PASS);
+    bool saveMotorValue(fs::FS &fs, int stateValue);
     bool loadConfig(fs::FS &fs);
+    bool loadMotorValue(fs::FS &fs);
+    
 
     void writeServoLog();
 
     char ssid[32];
     char pass[32];
+    int motorValue;
 private:
     
 
     String configFilePath = "/config.txt";
+    String motorStatePath = "/value.txt";
 
     String json_parser(String target, String key);
 };
