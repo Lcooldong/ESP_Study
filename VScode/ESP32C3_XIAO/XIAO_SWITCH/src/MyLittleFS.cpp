@@ -286,6 +286,26 @@ bool MyLittleFS::saveMotorValue(fs::FS &fs, int stateValue)
     return true;
 }
 
+bool MyLittleFS::saveCurrentState(fs::FS &fs, bool state)
+{
+    String configData;
+
+    mylightState = state;
+
+    configData = String("\"STATE\":" + String(state)); // 값 추가
+
+    File configFile = fs.open(lightStatePath, "w");
+    if (!configFile) 
+    {
+        Serial.println("Failed to open config file for writing");
+        return false;
+    }
+    configFile.println(configData); // 파일 쓰기
+    
+    configFile.close();
+
+    return true;
+}
 
 
 bool MyLittleFS::loadConfig(fs::FS &fs)
@@ -334,6 +354,26 @@ bool MyLittleFS::loadMotorValue(fs::FS &fs)
 
     Serial.printf( "MOTOR : %d\n" ,motorValue);
     motorValueFile.close();
+
+    return true;
+}
+
+
+bool MyLittleFS::loadLightState(fs::FS &fs)
+{
+    File lightStateFile = fs.open(lightStatePath, "r");
+    if(!lightStateFile)
+    {
+        Serial.println("Failed to open config file");
+        return false;
+    }
+
+    String value = lightStateFile.readStringUntil('\n');
+    mylightState = json_parser(value, "STATE").toInt();
+
+    Serial.printf( "State : %d\n" , mylight);
+    lightStateFile.close();
+    
 
     return true;
 }

@@ -122,15 +122,21 @@ void setup() {
   }
   delay(500);
   beginWiFiManager();
-  if(mySPIFFS->loadMotorValue(LittleFS))
-  { 
-    targetPos = mySPIFFS->motorValue;
-  }
-  else
-  {
-    targetPos = SERVO_IDLE_ANGLE;
-  }
+  mySPIFFS->loadMotorValue(LittleFS);
+  targetPos = SERVO_IDLE_ANGLE;
+  mySPIFFS->loadLightState(LittleFS);
+  lightState = mySPIFFS->mylightState;
+  Serial.printf("CURRENT STATE : %d\r\n", lightState);
 
+  
+  // if(lightState)
+  // {
+  //   strcpy(msg, "ON");
+  // }
+  // else
+  // {
+  //   strcpy(msg, "OFF");
+  // }
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   // printLocalTime();
 
@@ -156,9 +162,11 @@ void setup() {
   ElegantOTA.onStart(onOTAStart);
   ElegantOTA.onProgress(onOTAProgress);
   ElegantOTA.onEnd(onOTAEnd);
-
+  
   server.begin();
   Serial.printf("\r\n===============Start ESP32===============\r\n");
+
+  lightServo.attach(SERVO_PIN);
 }
 
 
@@ -171,7 +179,7 @@ void loop() {
   client.loop();
   ElegantOTA.loop();
 
-  localSwitch();
+  //localSwitch();
   rotateServo(targetPos, 1);
  
   
@@ -304,11 +312,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
 #ifdef DEBUG
       Serial.println("Value Changed!");
 #endif
-      servoAttach();
+      //servoAttach();
     }
 
     if(posChanged)
     {
+      servoAttach();
       if(!strcmp(msg, "ON"))
       {
 #ifdef DEBUG
@@ -330,7 +339,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
       servoIdleCount = 0;
 
-
+      mySPIFFS->saveCurrentState(LittleFS, lightState);
     }
     else
     {
@@ -338,7 +347,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
       if(servoIdleCount > SERVO_IDLE_DELAY)
       {
-        servoAttach();
+        //servoAttach();
         targetPos = SERVO_IDLE_ANGLE;
       }
     }

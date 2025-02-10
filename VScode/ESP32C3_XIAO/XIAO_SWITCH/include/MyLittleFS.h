@@ -31,20 +31,24 @@ public:
 
     bool saveConfig(fs::FS &fs, String SSID, String PASS);
     bool saveMotorValue(fs::FS &fs, int stateValue);
+    bool saveCurrentState(fs::FS &fs, bool state);
     bool loadConfig(fs::FS &fs);
     bool loadMotorValue(fs::FS &fs);
-    
+    bool loadLightState(fs::FS &fs);
 
     void writeServoLog();
 
     char ssid[32];
     char pass[32];
     int motorValue;
+    char mylight[4];
+    bool mylightState;
 private:
     
 
     String configFilePath = "/config.txt";
     String motorStatePath = "/value.txt";
+    String lightStatePath = "/light.txt";
 
     String json_parser(String target, String key);
 };
