@@ -249,7 +249,7 @@ void loop() {
     controlSolenoid();
     setLED();
     photoSensing();
-    // pressKey(); // Debug
+    pressKey(); // Debug
   }
   localSwitch();
   breathe(5);
@@ -391,14 +391,14 @@ void pressKey()
     {
       case '1':
       {
-        Serial.println("1->");
+        Serial.printf("1-> ");
         setRelay1();
         break;         
       }
   
       case '2':
       {
-        Serial.println("2->");
+        Serial.printf("2-> ");
         setRelay2();
         break;
       }
@@ -522,6 +522,7 @@ void localSwitch()
 void setRelay1()
 {
   relayState = true;
+  solenoidState = SOL_PUSH;
   // myNeopixel->pickOneLED(0, myNeopixel->strip->Color(0, 255, 0),10, 1 );
   // Serial.printf("Push Solenoid\r\n");
 }
@@ -529,6 +530,8 @@ void setRelay1()
 void setRelay2()
 {
   relayState = false;
+  solenoidState = SOL_RELEASE;
+  
   // myNeopixel->pickOneLED(0, myNeopixel->strip->Color(0, 0, 255),10, 1 );
   // Serial.printf("Release Solenoid\r\n");
 }
