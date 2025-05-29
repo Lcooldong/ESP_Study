@@ -4,6 +4,7 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <U8g2lib.h>
+#include "EspCAN.h"
 
 #include "MyLittleFS.h"
 #include "MyOTA.h"
@@ -49,30 +50,51 @@ typedef struct __attribute__ ((packed)) solPacket
 {
   byte STX;
   byte REQUEST;
+  byte ESP_STATE;
   byte LED_BRIGHTNESS;
   byte SOLENOID_STATE;
-  byte PHOTO_STATE;
+  byte PHOTO_SWITCH;
+  byte PHOTO_TRIGGER;
   byte ETX;
-}PACKET;
+}solenoid_t;
 
-PACKET sendPacket;
-PACKET receivedPacket;
-const int structSize = sizeof(sendPacket);
-byte send[structSize] = {0, };
-byte recv[structSize] = {0, };
+typedef union
+{
+  solenoid_t sol;
+  uint8_t data[sizeof(solenoid_t)];
+
+}sol_packet_t;
+
+sol_packet_t recvPacket;
+sol_packet_t sendPacket;
+solenoid_t *recvSolenoid = &recvPacket.sol;
+solenoid_t *sendSolenoid = &sendPacket.sol;
+
 
 typedef enum
 {
-  LED_CHANGED = 0xF1,
-  SOL_PUSH = 0xF2,
-  SOL_RELEASE = 0xF3,
-  PHOTO_START = 0xF4,
-  PHOTO_STOP = 0xF5,
-  PHOTO_TRIG = 0xF6,
+  LED_TURN_OFF  = 0xF0,
+  LED_TURN_ON   = 0xF1,
+  SOL_PUSH      = 0xF2,
+  SOL_RELEASE   = 0xF3,
+  PHOTO_START   = 0xF4,
+  PHOTO_STOP    = 0xF5,
+  PHOTO_TRIG    = 0xF6,
   PHOTO_READING = 0xF7,
-  REQUEST_DATA = 0xF8,
-  RETURN_DATA = 0xF9
+  REQUEST_DATA  = 0xF8,
+  RETURN_DATA   = 0xF9
 }SolREQUEST;
+
+typedef enum
+{
+  ESP_OTA_MODE = 0x55,
+  ESP_NORMAL_MODE = 0xAA,
+  PHOTO_OFF = 0x00,
+  PHOTO_ON = 0x01,
+  LED_OFF = 0x00,
+  LED_ON = 0x01,
+}SolState;
+
 
 uint64_t breathingTime = 0;
 bool breathingDirection = false;
@@ -86,6 +108,7 @@ int solenoidState = 0;
 
 uint64_t lightTime = 0;
 bool lightState = false;
+bool lightFlag = false; 
 uint8_t lightValue = 0;
 
 int otaStatus = 0;
@@ -99,16 +122,17 @@ uint32_t relayTime = 0;
 bool relayToggle = false;
 
 
-bool photoState = false;
+bool photoFlag = false;
 int photoTrigger = 0;
 uint64_t photoTime = 0;
 int photoCount = 0;
+
 
 // EspSoftwareSerial::UART RS485;
 
 MyOTA* myOTA = new MyOTA();
 MyLittleFS* myFS = new MyLittleFS();
-Button myBtn(BUTTON_PIN, true, 20);  // 0 -> HIGH , Pull-up ->Invert (true) 
+Button myBtn(BUTTON_PIN, false, 20);  // 0 -> HIGH , Pull-up ->Invert (true) 
 U8G2_SSD1306_128X32_UNIVISION_F_SW_I2C u8g2(U8G2_R0, SCL_PIN, SDA_PIN, U8X8_PIN_NONE);
 
 
@@ -136,34 +160,47 @@ void setOLED();
 void setup() {
   Serial.begin(115200);
   RS485.begin(9600, SERIAL_8N1, RS485_RX, RS485_TX);
+  canInit();
+  sendSolenoid->STX = PACKET_STX;
+  sendSolenoid->ETX = PACKET_ETX;
   // RS485.begin(RS485_BAUDRATE, EspSoftwareSerial::SWSERIAL_8N1, RS485_RX, RS485_TX);
+
 
   initPinout();
   initOLED();
 
+  // delay(5000);
 
   // Find button Status
-  // while (true)
-  // { 
-  //   myBtn.read();
-  //   if(myBtn.pressedFor(3000,5000))
-  //   {
-  //     otaStatus = 1;
-  //     Serial.printf("STATUS : %d ------------------------\r\n", otaStatus);
-  //     break;
-  //   }
-  //   else if (myBtn.wasReleased()) 
-  //   {
-  //     otaStatus = 0;
-  //     Serial.printf("STATUS : %d ------------------------\r\n", otaStatus);
-  //     break;
-  //   }
-  //   else if(myBtn.isReleased()) // Current 
-  //   {
-  //     Serial.printf("STATUS : released %d ------------------------\r\n", otaStatus);
-  //     break;
-  //   }
-  // }
+  while (true)
+  { 
+    myBtn.read();
+    if(myBtn.pressedFor(3000,5000))
+    {
+      otaStatus = 1;
+      sendSolenoid->ESP_STATE = ESP_OTA_MODE;
+
+      Serial.printf("STATUS : %d ------------------------\r\n", otaStatus);
+      break;
+    }
+    else if (myBtn.wasReleased()) 
+    {
+      otaStatus = 0;
+      sendSolenoid->ESP_STATE = ESP_NORMAL_MODE;
+   
+      Serial.printf("STATUS : %d ------------------------\r\n", otaStatus);
+      break;
+    }
+    else if(myBtn.isReleased()) // Current Mode
+    {
+      otaStatus = 0;
+      sendSolenoid->ESP_STATE = ESP_NORMAL_MODE;
+      
+      Serial.printf("STATUS : released %d ------------------------\r\n", otaStatus);
+      break;
+    }
+  }
+  canSend(0x257, 8, 100, sendPacket.data); // Send CAN Message
 
   if(otaStatus)
   {
@@ -209,8 +246,8 @@ void setup() {
     
   }
 
-  sendPacket.STX = PACKET_STX;
-  sendPacket.ETX = PACKET_ETX;
+  
+  
   // Serial.println("Done");
 }
 
@@ -245,79 +282,69 @@ void loop() {
   else
   {
     // myModbus->pollModbus();
-    receivePacket();
-    controlSolenoid();
-    setLED();
-    photoSensing();
-    pressKey(); // Debug
-  }
-  localSwitch();
-  breathe(5);
-  // rs485Command();
-}
+    // receivePacket();
+    // uint8_t myData[8] = {0,1, 2, 3, 4, 5, 6, 7};
+    
+    CANMessage receivedFrame = canReceive(); // Receive CAN Message 
 
-
-void sendSolPacket(byte myRequest)
-{
-  sendPacket.REQUEST = myRequest;
-  sendPacket.LED_BRIGHTNESS = lightValue;
-  sendPacket.SOLENOID_STATE = solenoidState;
-  sendPacket.PHOTO_STATE = photoTrigger;
-
-  RS485.write((uint8_t*)&sendPacket, sizeof(sendPacket));
-  // Serial.println("Send Packet !!");
-}
-
-void receivePacket()
-{
-  if(millis() - rs485Time >= 1)
-  {
-    if(RS485.available())
+    if(receivedFrame.id != 0)
     {
-      RS485.readBytes(recv, structSize);
-      for (int i = 0; i < structSize; i++)
+      Serial.printf("ID: 0x%03X, Data: ", receivedFrame.id);
+      for (int i = 0; i < receivedFrame.len; i++)
       {
-        Serial.printf(" 0x%02X | ", recv[i]);
+        Serial.printf("0x%02X ", receivedFrame.data[i]);
       }
       Serial.println();
-      
-      receivedPacket.REQUEST = recv[1];
-      receivedPacket.LED_BRIGHTNESS = recv[2];
-      // receivedPacket.SOLENOID_STATE = recv[3];
 
-      if(recv[0] == PACKET_STX && recv[structSize - 1] == PACKET_ETX)
+      memcpy(recvPacket.data, receivedFrame.data, sizeof(solenoid_t));
+      // Serial.printf("STX 0x%02X\r\n", recvSolenoid->STX);
+      // Serial.printf("ETX 0x%02X\r\n", recvSolenoid->ETX);
+
+      if(recvSolenoid->STX == PACKET_STX && recvSolenoid->ETX == PACKET_ETX)
       {
-        switch (receivedPacket.REQUEST)
+        Serial.printf("0x%02X\r\n", recvSolenoid->REQUEST);
+        Serial.printf("0x%02X\r\n", recvSolenoid->ESP_STATE);
+        Serial.printf("0x%02X\r\n", recvSolenoid->LED_BRIGHTNESS);
+        Serial.printf("0x%02X\r\n", recvSolenoid->SOLENOID_STATE);
+        Serial.printf("0x%02X\r\n", recvSolenoid->PHOTO_SWITCH);
+        Serial.printf("0x%02X\r\n", recvSolenoid->PHOTO_TRIGGER);
+        
+        switch (recvSolenoid->REQUEST)
         {
-        case LED_CHANGED:
-          lightState = true;
-          lightValue = receivedPacket.LED_BRIGHTNESS;
+        case LED_TURN_ON:   // 0xF1
+          lightFlag = true;
+          lightValue = recvSolenoid->LED_BRIGHTNESS;
           Serial.printf("LED Value = %d\r\n", lightValue);
           break;
+        case LED_TURN_OFF:  // 0xF0
+          lightFlag = true;
+          lightValue = 0;
+          Serial.println("LED Turn Off");
+          break;
 
-        case SOL_PUSH:
+        case SOL_PUSH:   // 0xF2
           Serial.println("RX : Push");
           solenoidState = SOL_PUSH;
 
           break;
-        case SOL_RELEASE:
+        case SOL_RELEASE: // 0xF3
           Serial.println("RX : Release");
           solenoidState = SOL_RELEASE;
 
           break;
-        case PHOTO_START:
+        case PHOTO_START:   // 0xF4
           Serial.println("RX : Photo Start");
-          photoState = true;
+          photoFlag = true;
           break;
 
-        case PHOTO_STOP:
+        case PHOTO_STOP:  // 0xF5
           Serial.println("RX : Photo Stop");
-          photoState = false;
+          photoFlag = false;
           break;
         
         case REQUEST_DATA:
           Serial.println("Return Data");
-          sendSolPacket(RETURN_DATA);
+          // sendSolPacket(RETURN_DATA);
 
         default:
           break;
@@ -327,10 +354,94 @@ void receivePacket()
 
       
     }
-    rs485Time = millis();
+
+    
+    controlSolenoid();
+    setLED();
+    photoSensing();
+    pressKey(); // Debug
+    canSend (0x257, 8, 100, sendPacket.data); // Send CAN Message
   }
-  
+  localSwitch();
+  breathe(5);
+  // rs485Command();
 }
+
+
+void sendSolPacket(byte myRequest)
+{
+  sendSolenoid->REQUEST = myRequest;
+  sendSolenoid->LED_BRIGHTNESS = lightValue;
+  sendSolenoid->SOLENOID_STATE = solenoidState;
+  sendSolenoid->PHOTO_TRIGGER = photoTrigger;
+
+  RS485.write((uint8_t*)&sendPacket, sizeof(sendPacket));
+  // Serial.println("Send Packet !!");
+}
+
+// void receivePacket()
+// {
+//   if(millis() - rs485Time >= 1)
+//   {
+//     if(RS485.available())
+//     {
+//       RS485.readBytes(recv, structSize);
+//       for (int i = 0; i < structSize; i++)
+//       {
+//         Serial.printf(" 0x%02X | ", recv[i]);
+//       }
+//       Serial.println();
+      
+//       receivedPacket.REQUEST = recv[1];
+//       receivedPacket.LED_BRIGHTNESS = recv[2];
+//       // receivedPacket.SOLENOID_STATE = recv[3];
+
+//       if(recv[0] == PACKET_STX && recv[structSize - 1] == PACKET_ETX)
+//       {
+//         switch (receivedPacket.REQUEST)
+//         {
+//         case LED_TURN_ON:
+//           lightState = true;
+//           lightValue = receivedPacket.LED_BRIGHTNESS;
+//           Serial.printf("LED Value = %d\r\n", lightValue);
+//           break;
+
+//         case SOL_PUSH:
+//           Serial.println("RX : Push");
+//           solenoidState = SOL_PUSH;
+
+//           break;
+//         case SOL_RELEASE:
+//           Serial.println("RX : Release");
+//           solenoidState = SOL_RELEASE;
+
+//           break;
+//         case PHOTO_START:
+//           Serial.println("RX : Photo Start");
+//           photoFlag = true;
+//           break;
+
+//         case PHOTO_STOP:
+//           Serial.println("RX : Photo Stop");
+//           photoFlag = false;
+//           break;
+        
+//         case REQUEST_DATA:
+//           Serial.println("Return Data");
+//           sendSolPacket(RETURN_DATA);
+
+//         default:
+//           break;
+//         }
+
+//       }
+
+      
+//     }
+//     rs485Time = millis();
+//   }
+  
+// }
 
 void initPinout()
 {
@@ -405,8 +516,8 @@ void pressKey()
 
       case '3':
         Serial.println("3->");
-        photoState = !photoState;
-        Serial.printf("Photo Flag : %d\r\n", photoState); 
+        photoFlag = !photoFlag;
+        Serial.printf("Photo Flag : %d\r\n", photoFlag); 
         break;
 
       case '4':
@@ -482,15 +593,16 @@ void localSwitch()
 {
 
   myBtn.read();
+  // Serial.printf("Button State : %d\r\n", myBtn.read());
 
   if(myBtn.pressedFor(3000,5000))
   {
-    // Serial.printf("BUTTON PressedFor 3000\r\n");
-    // ESP.restart();
+    Serial.printf("BUTTON PressedFor 3000\r\n");
+    // ESP.restart(); // 아직 OTA 동작 X
   } 
   else if(myBtn.wasReleasefor(500))
   {
-    // Serial.printf("BUTTON Released  500\r\n"); // Button Pressing Filter
+    Serial.printf("BUTTON Released  500\r\n"); // Button Pressing Filter
 
   } 
   else if (myBtn.wasReleased()) 
@@ -505,7 +617,6 @@ void localSwitch()
       {      
         solenoidState = SOL_RELEASE;
       }
-
       // relayToggle = true;
 
       // Serial.println("Button -> Save Sol and Led");
@@ -558,15 +669,16 @@ void controlSolenoid()
     if(solenoidState == SOL_PUSH)
     {
       digitalWrite(RELAY_1_PIN, HIGH);
-      Serial.println("Sol - 1 toggle ON");
+      Serial.println("Sol - 1 ");
       relayState = true;
     }
     else if(solenoidState == SOL_RELEASE)
     {
       digitalWrite(RELAY_2_PIN, HIGH);
-      Serial.println("Sol - 2 toggle ON");
+      Serial.println("Sol - 2 ");
       relayState = false;
     }
+    sendSolenoid->SOLENOID_STATE = solenoidState;
     relayToggle = false;
     
   }
@@ -583,33 +695,37 @@ void controlSolenoid()
 
 void setLED()
 {
-  if(lightState)
+  if(lightFlag)
   {
+    
     if(millis() - lightTime > 100)
     {
       ledcWrite(ledChannel2 , lightValue);
       myFS->saveSol(LittleFS, solenoidState, lightValue);
-
+      sendSolenoid->LED_BRIGHTNESS = lightValue;
       setOLED();
 
-      lightState = 0;  // END
+      lightFlag = false;  // JUST ONCE
       lightTime = millis();
     }
-    
   }
 }
 
 void photoSensing()
 {
-  // if(photoFlag)
-  if(photoState)
+  if(photoFlag)
   {
-    // Serial.printf("Start photo: %d\r\n", photoState);
+    // Serial.printf("Start photo: %d\r\n", photoFlag);
     if(millis() - photoTime >= 50)
     {
 
       photoTime = millis();
       int photoValue = digitalRead(PHOTO_SENSOR_PIN);
+      sendSolenoid->PHOTO_SWITCH = PHOTO_ON;
+      sendSolenoid->PHOTO_TRIGGER = photoValue;
+      
+      
+
       Serial.printf("PHOTO : %d\r\n", photoValue);
       // RS485.printf("PHOTO : %d\r\n", photoValue);
       if(photoValue)
@@ -624,19 +740,21 @@ void photoSensing()
 
       if(photoCount > 10)
       {
-        photoTrigger = PHOTO_TRIG;
-        sendSolPacket(PHOTO_TRIG);
-        photoState = false;  // 2
-        photoCount = 0;
+        sendSolenoid->PHOTO_TRIGGER = PHOTO_TRIG;
         Serial.printf("해당 위치에 도달하였습니다!\r\n");
-        
+        // sendSolenoid->PHOTO_SWITCH = PHOTO_OFF;
       }
       else
       {
         photoTrigger = PHOTO_READING;
-        sendSolPacket(PHOTO_READING);
+        // sendSolPacket(PHOTO_READING);
       }      
     }
+  }
+  else
+  {
+    sendSolenoid->PHOTO_SWITCH = PHOTO_OFF;
+    photoCount = 0;
   }
 }
 
