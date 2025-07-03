@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>OTA Firmware Upload</title>
+  <style>
+    body { font-family: Arial; max-width: 600px; margin: 20px auto; text-align: center; }
+    .progress-container { width: 100%; background: #eee; border-radius: 20px; margin-top: 20px; }
+    .progress-bar { height: 25px; width: 0%; background: #76b900; border-radius: 20px; transition: width 0.3s; }
+    .percent { font-weight: bold; margin-top: 10px; }
+    #fileList { text-align: left; margin-top: 30px; padding: 0 30px; }
+  </style>
+</head>
+<body>
+  <h2>OTA Firmware Upload</h2>
+  <form id="upload_form">
+    <input type="file" name="update" id="update" required><br><br>
+    <input type="submit" value="Upload Firmware">
+  </form>
+
+  <div class="progress-container">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+  <div class="percent" id="percent">0%</div>
+
+  <h3>Saved Files:</h3>
+  <div id="fileList">Loading...</div>
+
+  <script>
+    const form = document.getElementById('upload_form');
+    const progressBar = document.getElementById('progressBar');
+    const percentText = document.getElementById('percent');
+    const fileList = document.getElementById('fileList');
+
+    form.onsubmit = function(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById("update");
+      const file = fileInput.files[0];
+      if (!file) return alert("No file selected.");
+
+      fetch("/ota/start?mode=firmware").then(res => {
+        if (!res.ok) throw new Error("OTA start failed");
+        const formData = new FormData();
+        formData.append("update", file);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/ota/upload", true);
+
+        xhr.upload.onprogress = function(e) {
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            progressBar.style.width = percent + "%";
+            percentText.textContent = percent + "%";
+          }
+        };
+
+        xhr.onload = function() {
+          if (xhr.status === 200) {
+            progressBar.style.width = "100%";
+            percentText.textContent = "Upload complete!";
+            loadFileList(); // 파일 목록 다시 불러오기
+          } else {
+            alert("Upload failed: " + xhr.responseText);
+          }
+        };
+
+        xhr.onerror = function() {
+          alert("Upload error");
+        };
+
+        xhr.send(formData);
+      }).catch(err => {
+        alert(err.message);
+      });
+    };
+
+    function loadFileList() {
+      fetch("/list")
+        .then(res => res.json())
+        .then(files => {
+          if (files.length === 0) {
+            fileList.innerHTML = "No files found.";
+          } else {
+            fileList.innerHTML = "<ul>" + files.map(f => `<li>${f}</li>`).join("") + "</ul>";
+          }
+        })
+        .catch(err => {
+          fileList.innerHTML = "Error loading file list.";
+        });
+    }
+
+    // 처음 페이지 로드 시 목록 표시
+    loadFileList();
+  </script>
+</body>
+</html>
