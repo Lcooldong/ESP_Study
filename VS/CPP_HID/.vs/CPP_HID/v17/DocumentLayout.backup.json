@@ -1,14 +1,14 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "D:\\Github\\ESP_Study\\VS\\CPP_HID\\",
+  "WorkspaceRootPath": "C:\\Users\\n_coo\\Github\\ESP_Study\\VS\\CPP_HID\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{FC24741D-216E-4C20-90BD-383EE0CEE024}|CPP_HID\\CPP_HID.vcxproj|D:\\Github\\ESP_Study\\VS\\CPP_HID\\CPP_HID\\main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "AbsoluteMoniker": "D:0:0:{FC24741D-216E-4C20-90BD-383EE0CEE024}|CPP_HID\\CPP_HID.vcxproj|C:\\Users\\n_coo\\Github\\ESP_Study\\VS\\CPP_HID\\CPP_HID\\main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{FC24741D-216E-4C20-90BD-383EE0CEE024}|CPP_HID\\CPP_HID.vcxproj|solutionrelative:CPP_HID\\main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{FC24741D-216E-4C20-90BD-383EE0CEE024}|CPP_HID\\CPP_HID.vcxproj|D:\\GITHUB\\ESP_STUDY\\VS\\CPP_HID\\CPP_HID\\SDL3-3.2.18\\INCLUDE\\SDL3\\SDL.H||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{FC24741D-216E-4C20-90BD-383EE0CEE024}|CPP_HID\\CPP_HID.vcxproj|solutionrelative:CPP_HID\\SDL3-3.2.18\\INCLUDE\\SDL3\\SDL.H||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\n_coo\\Github\\ESP_Study\\VS\\CPP_HID\\CPP_HID\\SDL3-3.2.18\\include\\SDL3\\SDL.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:CPP_HID\\SDL3-3.2.18\\include\\SDL3\\SDL.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     }
   ],
   "DocumentGroupContainers": [
@@ -24,27 +24,30 @@
               "$type": "Document",
               "DocumentIndex": 1,
               "Title": "SDL.h",
-              "DocumentMoniker": "D:\\Github\\ESP_Study\\VS\\CPP_HID\\CPP_HID\\SDL3-3.2.18\\include\\SDL3\\SDL.h",
+              "DocumentMoniker": "C:\\Users\\n_coo\\Github\\ESP_Study\\VS\\CPP_HID\\CPP_HID\\SDL3-3.2.18\\include\\SDL3\\SDL.h",
               "RelativeDocumentMoniker": "CPP_HID\\SDL3-3.2.18\\include\\SDL3\\SDL.h",
-              "ToolTip": "D:\\Github\\ESP_Study\\VS\\CPP_HID\\CPP_HID\\SDL3-3.2.18\\include\\SDL3\\SDL.h",
+              "ToolTip": "C:\\Users\\n_coo\\Github\\ESP_Study\\VS\\CPP_HID\\CPP_HID\\SDL3-3.2.18\\include\\SDL3\\SDL.h",
               "RelativeToolTip": "CPP_HID\\SDL3-3.2.18\\include\\SDL3\\SDL.h",
               "ViewState": "AgIAAA8AAAAAAAAAAAAAABkAAABIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-07-23T04:29:57.592Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-07-23T04:29:57.592Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "main.cpp",
-              "DocumentMoniker": "D:\\Github\\ESP_Study\\VS\\CPP_HID\\CPP_HID\\main.cpp",
+              "DocumentMoniker": "C:\\Users\\n_coo\\Github\\ESP_Study\\VS\\CPP_HID\\CPP_HID\\main.cpp",
               "RelativeDocumentMoniker": "CPP_HID\\main.cpp",
-              "ToolTip": "D:\\Github\\ESP_Study\\VS\\CPP_HID\\CPP_HID\\main.cpp",
+              "ToolTip": "C:\\Users\\n_coo\\Github\\ESP_Study\\VS\\CPP_HID\\CPP_HID\\main.cpp",
               "RelativeToolTip": "CPP_HID\\main.cpp",
-              "ViewState": "AgIAAAMAAAAAAAAAAAAAABUAAAApAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAC0AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-07-23T03:28:52.76Z",
               "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
             }
           ]
         }
