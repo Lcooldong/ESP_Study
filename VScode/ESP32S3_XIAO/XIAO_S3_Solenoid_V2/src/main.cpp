@@ -359,8 +359,8 @@ void loop() {
     controlSolenoid();
     setLED();
     photoSensing();
-    pressKey(); // Debug
-    canSend (0x257, 8, 100, sendPacket.data); // Send CAN Message
+    // pressKey(); // Debug
+    canSend (0x257, 8, 50, sendPacket.data); // Send CAN Message
   }
   localSwitch();
   breathe(5);
