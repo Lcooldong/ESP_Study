@@ -84,8 +84,10 @@ void pngClose(void *handle);
 int32_t pngRead(PNGFILE *handle, uint8_t *buffer, int32_t length);
 int32_t pngSeek(PNGFILE *handle, int32_t position);
 void pngDraw(PNGDRAW *pDraw);
+void pngDraw2(PNGDRAW *pDraw);
 // void drawPngFromLittleFS(const char *path, int x, int y);
 void drawPngFromLittleFS(const char *path, int x, int y, int targetW, int targetH);
+void drawPngScaled(const char* path, int dstW, int dstH, int posX, int posY);
 void listDir(fs::FS &fs, const char * dirname, uint8_t levels);
 void initGammaTable(float gamma);
 
@@ -232,8 +234,11 @@ void serial_command()
       drawPngFromLittleFS("/panda.png", 20, 25, 100, 200);
       break;
     case '6':
+      drawPngScaled("/panda.png", 240, 135, 0, 0);
+      break;
+
+    case '0':
       listDir(LittleFS, "/", 0);
-    
       break;
     }
     ledcWrite(LED_CHANNEL, ledValue); // Set LED brightness to 50% (not used in this example)
@@ -549,3 +554,122 @@ void listDir(fs::FS &fs, const char * dirname, uint8_t levels)
     }
     Serial.println("-------------------------------------");
 }
+
+int pngSrcWidth = 0, pngSrcHeight = 0;
+int scaledWidth = 0, scaledHeight = 0;
+float scaleFactor = 1.0;
+int drawX = 0, drawY = 0;
+
+
+int pngDstWidth = 135, pngDstHeight = 240;
+
+void pngDraw2(PNGDRAW *pDraw) {
+  static uint16_t lineBuf[240];
+
+  int yOut = (int)(pDraw->y * scaleFactor + 0.5); // 반올림
+  if (yOut >= scaledHeight) return;
+
+  for (int xOut = 0; xOut < scaledWidth; xOut++) {
+    int xIn = (int)(xOut / scaleFactor + 0.5); // 반올림
+    if (xIn >= pDraw->iWidth) continue;
+
+    int idx = xIn * 3;
+    if (idx + 2 >= pDraw->iWidth * 3) continue;
+
+    uint8_t r = gammaTable[pDraw->pPixels[idx]];
+    uint8_t g = gammaTable[pDraw->pPixels[idx + 1]];
+    uint8_t b = gammaTable[pDraw->pPixels[idx + 2]];
+
+    // 채도 향상
+    r = min((int)(r * 1.2), 255);
+    g = min((int)(g * 1.2), 255);
+    b = min((int)(b * 1.2), 255);
+
+    lineBuf[xOut] = tft.color565(r, g, b);
+  }
+
+  tft.pushImage(drawX, drawY + yOut, scaledWidth, 1, lineBuf);
+  Serial.printf("Line: %d\r\n", yOut);
+}
+
+void drawPngScaled(const char* path, int dstW, int dstH, int posX, int posY) {
+  drawX = posX;
+  drawY = posY;
+  pngDstWidth = dstW;
+  pngDstHeight = dstH;
+
+  int rc = png.open(path, pngOpen, pngClose, pngRead, pngSeek, (PNG_DRAW_CALLBACK *)pngDraw2);
+  if (rc != PNG_SUCCESS) {
+    Serial.printf("PNG open failed (%d): %s\n", rc, path);
+    return;
+  }
+
+  pngSrcWidth = png.getWidth();
+  pngSrcHeight = png.getHeight();
+
+  Serial.printf("Image: %dx%d → %dx%d at (%d,%d)\n",
+    pngSrcWidth, pngSrcHeight, pngDstWidth, pngDstHeight, drawX, drawY);
+
+  png.decode(NULL, 0);
+  png.close();
+}
+const int MAX_WIDTH = 135;
+
+
+
+
+
+
+// void pngDraw(PNGDRAW *pDraw) {
+//   static uint16_t lineBuffer[MAX_IMAGE_WIDTH];
+
+//   for (int i = 0; i < pDraw->iWidth; i++) {
+//     // 원본 RGB 값
+//     uint8_t r = pDraw->pPixels[i * 3 + 0];
+//     uint8_t g = pDraw->pPixels[i * 3 + 1];
+//     uint8_t b = pDraw->pPixels[i * 3 + 2];
+
+//     // 감마 보정
+//     r = applyGamma(r);
+//     g = applyGamma(g);
+//     b = applyGamma(b);
+
+//     // 채도/명도 boost (선택)
+//     r = min((int)(r * 1.2), 255);
+//     g = min((int)(g * 1.2), 255);
+//     b = min((int)(b * 1.2), 255);
+
+//     lineBuffer[i] = tft.color565(r, g, b);
+//   }
+
+//   tft.pushImage(xpos, ypos + pDraw->y, pDraw->iWidth, 1, lineBuffer);
+//   Serial.printf("Line: %d\r\n", pDraw->y);
+// }
+
+
+// void pngDraw2(PNGDRAW *pDraw) {
+//   // 비율 계산
+//   float scaleX = (float)pngSrcWidth / pngDstWidth;
+//   float scaleY = (float)pngSrcHeight / pngDstHeight;
+
+//   // 현재 라인이 출력 대상인지 확인
+//   int yOut = (int)(pDraw->y / scaleY);
+//   if (yOut >= pngDstHeight) return;
+
+//   // 출력용 버퍼
+//   static uint16_t lineBuf[135]; // 최대 크기
+
+//   for (int xOut = 0; xOut < pngDstWidth; xOut++) {
+//     int xIn = (int)(xOut * scaleX);
+//     int idx = xIn * 3;
+//     if (idx + 2 >= pDraw->iWidth * 3) continue;
+
+//     uint8_t r = gammaTable[pDraw->pPixels[idx + 0]];
+//     uint8_t g = gammaTable[pDraw->pPixels[idx + 1]];
+//     uint8_t b = gammaTable[pDraw->pPixels[idx + 2]];
+//     lineBuf[xOut] = tft.color565(r, g, b);
+//   }
+
+//   tft.pushImage(drawX, drawY + yOut, pngDstWidth, 1, lineBuf);
+//   Serial.printf("Line: %d\r\n", pDraw->y);
+// }
