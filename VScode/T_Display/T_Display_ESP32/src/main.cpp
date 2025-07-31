@@ -28,6 +28,8 @@ void setup() {
   littleFS_init();
   
   tft_init();
+  tft_printf(0, 25, "%s  ", menu_items[item_selected]);
+  tft_printf(0, 60, "Click  ");
   // tft_clear(TFT_BLACK);
 }
 
