@@ -17,12 +17,14 @@ void button_init()
   
 }
 
+
 int click_counter = 0;
 void rotary_sw_click() {
   Serial.println("Rotary switch clicked!");
   tft_printf(0, 60, "Click:%5d  ", click_counter++);
   // tft.fillScreen(TFT_BLUE); // Change screen color on rotary switch click
 }
+
 
 void button_tick()
 {
@@ -37,11 +39,11 @@ void button_click() {
 }
 
 
-
 void doubleClick()
 {
   Serial.println("Button doubleClick!");
 } 
+
 
 void LongPressStart(void *oneButton)
 {
@@ -49,12 +51,14 @@ void LongPressStart(void *oneButton)
   Serial.println("\t - LongPressStart()");
 }
 
+
 // this function will be called when the button is released.
 void LongPressStop(void *oneButton)
 {
   Serial.print(((OneButton *)oneButton)->getPressedMs());
   Serial.println("\t - LongPressStop()\n");
 }
+
 
 // this function will be called when the button is held down.
 void DuringLongPress(void *oneButton)
