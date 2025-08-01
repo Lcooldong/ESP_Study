@@ -30,9 +30,10 @@ MagneticSensorSPIConfig_s AS5048_SPI_CONFIG = {
   .command_parity_bit = 15 // parity not implemented
 };
 
-MagneticSensorSPI sensor1 = MagneticSensorSPI(15, 14, 0x3FFF);
+MagneticSensorSPI sensor1 = MagneticSensorSPI(15, 14, 0x3FFF); // CS pin 15, 14-bit resolution, angle register 0x3FFF
 // MagneticSensorSPI sensor2 = MagneticSensorSPI(AS5048_SPI_CONFIG, 15);
 
+LowsideCurrentSense currentSense1 = LowsideCurrentSense(34, 35, 36, 37); // INA pin 34, INB pin 35, INC pin 36, IND pin 37
 BLDCMotor motor1 = BLDCMotor(11);
 BLDCDriver3PWM driver1 = BLDCDriver3PWM(4, 16, 17, 5);
 
@@ -59,7 +60,7 @@ void setup() {
   // sensor2.init();
   motor1.linkSensor(&sensor1);
   
-  
+  //▬▬ 
 
   driver1.init();
   driver1.voltage_power_supply = DRIVER_VOLTAGE;

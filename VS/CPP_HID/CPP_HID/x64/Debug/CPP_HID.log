@@ -1,0 +1,3 @@
+﻿  main.cpp
+C:\Users\n_coo\Github\ESP_Study\VS\CPP_HID\CPP_HID\main.cpp(20,17): warning C4804: '<': 연산에 'bool' 형식을 사용하는 것은 안전하지 않습니다.
+  CPP_HID.vcxproj -> C:\Users\n_coo\Github\ESP_Study\VS\CPP_HID\x64\Debug\CPP_HID.exe

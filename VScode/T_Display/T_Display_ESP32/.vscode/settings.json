@@ -1,0 +1,7 @@
+{
+  "stm32-for-vscode.openOCDPath": false,
+  "files.associations": {
+    "fstream": "cpp",
+    "random": "cpp"
+  }
+}
