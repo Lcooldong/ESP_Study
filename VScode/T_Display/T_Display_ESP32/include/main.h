@@ -8,13 +8,16 @@
 #include <esp_flash.h>
 #include <core_version.h> // For ARDUINO_ESP32_RELEASE
 #include <RotaryEncoder.h> // Include the RotaryEncoder library
+#include <AS5600.h>
+// #include <NimBLEServer.h>
+// #include <NimBLEDevice.h>
 
 
 #include "MyLittleFS.h" // #include <FS.h>
 #include "MyACAN.h"
 #include "MyTFT.h"
 #include "MyButton.h"
-
+#include "MyBLECallback.h"
 
 #define BUTTON_PIN     GPIO_NUM_35 // GPIO pin for the button
 
@@ -30,7 +33,9 @@
 #define LED_FREQUENCY  5000 // Frequency for PWM (not used in this example)
 #define LED_RESOLUTION 8 // Resolution for PWM (not used in this example)
 
-
+#define AS5600_SDA_PIN GPIO_NUM_21
+#define AS5600_SCL_PIN GPIO_NUM_22
+#define AS5600_DIR_PIN GPIO_NUM_27
 
 void encoder_update();
 

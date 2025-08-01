@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <SimpleFOC.h>
 // #include <SimpleFOCDrivers.h>
-#include <AS5048A.h>
+// #include <AS5048A.h>
 
 // #define AS5048A_TEST
 
