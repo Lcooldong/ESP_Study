@@ -521,7 +521,7 @@ void pressKey()
         break;
 
       case '4':
-        Serial.printf("LIGHT -> %d \r\n", lightState);
+        // Serial.printf("LIGHT -> %d \r\n", lightState);
         break;
 
       case '5':
@@ -533,7 +533,7 @@ void pressKey()
         {
           lightValue++;
         }
-        Serial.printf("RS485 : [%c] => %d\r\n", cmd, lightValue);
+        Serial.printf("LED LIGHT:[%c] => %d\r\n", cmd, lightValue);
         ledcWrite(ledChannel2 , lightValue);
         break;
       case '6':
@@ -545,7 +545,7 @@ void pressKey()
         {
           lightValue--;
         }
-        Serial.printf("RS485 : [%c] => %d\r\n", cmd, lightValue);
+        Serial.printf("LED LIGHT:[%c] => %d\r\n", cmd, lightValue);
         ledcWrite(ledChannel2 , lightValue);
         break;
 
