@@ -1,4 +1,4 @@
 {
   "stm32-for-vscode.openOCDPath": false,
-  "stm32-for-vscode.makePath": false
+  "stm32-for-vscode.makePath": "C:\\ST\\xpack-windows-build-tools-4.4.1-3\\bin\\make.EXE"
 }
