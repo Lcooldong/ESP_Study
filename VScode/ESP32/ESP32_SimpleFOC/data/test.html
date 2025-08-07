@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="kr">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE-edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Robot Modbus</title>
+        <link rel="stylesheet" href="{% static 'blog/bootstrap/bootstrap.min.css' %}" media="screen">
+        <script src="https://kit.fontawesome.com/a682742c30.js" crossorigin="anonymous"></script>
+    </head>
+    <body>
+        {% include 'blog/navbar.html' %}
+        
+        <div class="jumbotron">
+            <div class="media">
+                <img src="{% static 'blog/image/modbus_logo.png' %}" style="width: 10%; height:10%;" class="align-self-center mr-3" alt="...">
+                <div class="media-body">
+                    <h1 class="display-4">모드버스 클라이언트 프로그램</h1>
+                    <p class="lead">Modbus TCP 데이터를 전송 및 수신하는 웹 응용프로그램.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="container-fluid">
+            <div class="row mb-3">
+                <div class="col">
+                    <div class="card text-center">
+                        <div class="card-header">
+                            <h5>Connection</h5>
+                        </div>
+                        <div class="card-body d-flex justify-content-center">
+                            <div class="input-group flex-nowrap mb-3 input-group-lg" style="width: 40%;">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text" style="width: 150px;">IP Address</span>
+                                </div>
+                                <input type="text" class="form-control" placeholder="" aria-label="IP Address" aria-describedby="addon-wrapping" id="ip_address" value="127.0.0.1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col">
+                <div class="card text-center">
+                    <div class="card-header">
+                        <h5>Write Single Register</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group flex-nowrap mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" style="width: 150px;">Register Address</span>
+                            </div>
+                            <input type="text" class="form-control" placeholder="Address" aria-label="Address" aria-describedby="addon-wrapping" id="write_register_address">
+                        </div>
+
+                        <div class="input-group flex-nowrap mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" style="width: 150px;">Register Value</span>
+                            </div>
+                            <input type="text" class="form-control" placeholder="Value" aria-label="Value" aria-describedby="addon-wrapping" id="write_register_value">
+                        </div>
+
+                        <button type="button" class="btn btn-secondary btn-lg btn-block" id="write_register">Write Register</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card text-center">
+                    <div class="card-header">
+                        <h5>Read Single Register</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group flex-nowrap mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" style="width: 150px;">Register Address</span>
+                            </div>
+                            <input type="text" class="form-control" placeholder="Address" aria-label="Address" aria-describedby="addon-wrapping" id="read_register_address">
+                        </div>
+
+                        <div class="input-group flex-nowrap mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" style="width: 150px;">Register Value</span>
+                            </div>
+                            <input type="text" class="form-control" placeholder="Value" aria-label="Value" aria-describedby="addon-wrapping" id="read_register_result" readonly>
+                        </div>
+
+                        <button type="button" class="btn btn-secondary btn-lg btn-block" id="read_register">Read Register</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card text-center">
+                    <div class="card-header">
+                        <h5>Write Single Coil</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group flex-nowrap mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" style="width: 150px;">Coil Address</span>
+                            </div>
+                            <input type="text" class="form-control" placeholder="Address" aria-label="Address" aria-describedby="addon-wrapping" id="coil_address">
+                        </div>
+
+                        <div class="input-group flex-nowrap mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" style="width: 150px;">Coil Value</span>
+                            </div>
+                            <select class="custom-select" id="coil_value">
+                                <option value="True">True</option>
+                                <option value="False">False</option>
+                            </select>
+                        </div>
+
+                        <button type="button" class="btn btn-secondary btn-lg btn-block" id="write_coil">Write Coil</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card text-center">
+                    <div class="card-header">
+                        <h5>Read Coils</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group flex-nowrap mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" style="width: 50px;">First</span>
+                            </div>
+                            <input type="text" class="form-control" placeholder="Address" aria-label="Address" aria-describedby="addon-wrapping" id="first_address">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" style="width: 50px;">Last</span>
+                            </div>
+                            <input type="text" class="form-control" placeholder="Address" aria-label="Address" aria-describedby="addon-wrapping" id="last_address">
+                        </div>
+
+                        <div class="input-group flex-nowrap mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" style="width: 100px;">Coil Value</span>
+                            </div>
+                            <input type="text" class="form-control" placeholder="Value" aria-label="Value" aria-describedby="addon-wrapping" id="read_coil_result" value="" readonly>
+                        </div>
+
+                        <button type="button" class="btn btn-secondary btn-lg btn-block" id="read_coil">Read Coil</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container text-center mb-4">
+            <hr class="my-4">
+            <h5 id="result_message"></h5>
+        </div>
+
+        <script>
+            function getCookie(name) {
+                var cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    var cookies = document.cookie.split(';');
+                    for (var i = 0; i < cookies.length; i++) {
+                        var cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            
+            document.getElementById("write_register").addEventListener("click", function() {
+                var csrfToken = getCookie('csrftoken');
+
+                const ipAddress = document.getElementById("ip_address").value;
+                const registerAddress = document.getElementById("write_register_address").value;
+                const registerValue = document.getElementById("write_register_value").value;
+
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "{% url 'modbus_data' %}");
+                xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.setRequestHeader("X-CSRFToken", csrfToken); //CSRF 토큰을 요청 헤더에 추가
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        var response = JSON.parse(xhr.responseText);
+                        // 응답 처리
+                        document.getElementById("result_message").innerHTML = response.message;
+                        console.log(response);
+                    }
+                };
+                const data = JSON.stringify({ "mod": "writeRegister", "ipAddress": ipAddress, "registerAddress": registerAddress, "registerValue": registerValue });
+                xhr.send(data);
+            });
+
+            document.getElementById("read_register").addEventListener("click", function() {
+                var csrfToken = getCookie('csrftoken');
+
+                const ipAddress = document.getElementById("ip_address").value;
+                const registerAddress = document.getElementById("read_register_address").value;
+
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "{% url 'modbus_data' %}");
+                xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.setRequestHeader("X-CSRFToken", csrfToken); //CSRF 토큰을 요청 헤더에 추가
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        var response = JSON.parse(xhr.responseText);
+                        // 응답 처리
+                        document.getElementById("result_message").innerHTML = response.message;
+                        document.getElementById("read_register_result").value = response.register;
+                        console.log(response);
+                    }
+                };
+                const data = JSON.stringify({ "mod": "readRegister", "ipAddress": ipAddress, "registerAddress": registerAddress });
+                xhr.send(data);
+            });
+
+            document.getElementById("write_coil").addEventListener("click", function() {
+                var csrfToken = getCookie('csrftoken');
+
+                const ipAddress = document.getElementById("ip_address").value;
+                const coilAddress = document.getElementById("coil_address").value;
+                const coilValue = document.getElementById("coil_value").value;
+
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "{% url 'modbus_data' %}");
+                xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.setRequestHeader("X-CSRFToken", csrfToken); //CSRF 토큰을 요청 헤더에 추가
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        var response = JSON.parse(xhr.responseText);
+                        // 응답 처리
+                        document.getElementById("result_message").innerHTML = response.message;
+                        console.log(response);
+                    }
+                };
+                const data = JSON.stringify({ "mod": "writeCoil", "ipAddress": ipAddress, "coilAddress": coilAddress, "coilValue": coilValue });
+                xhr.send(data);
+            });
+
+            document.getElementById("read_coil").addEventListener("click", function() {
+                var csrfToken = getCookie('csrftoken');
+
+                const ipAddress = document.getElementById("ip_address").value;
+                const firstAddress = document.getElementById("first_address").value;
+                const lastAddress = document.getElementById("last_address").value;
+
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "{% url 'modbus_data' %}");
+                xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.setRequestHeader("X-CSRFToken", csrfToken); //CSRF 토큰을 요청 헤더에 추가
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        var response = JSON.parse(xhr.responseText);
+                        // 응답 처리
+                        document.getElementById("result_message").innerHTML = response.message;
+                        document.getElementById("read_coil_result").value = response.coils;
+                        console.log(response);
+                    }
+                };
+                const data = JSON.stringify({ "mod": "readCoil", "ipAddress": ipAddress, "firstAddress": firstAddress, "lastAddress": lastAddress });
+                xhr.send(data);
+            });
+        </script>
+
+        {% include 'blog/footer.html' %}
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js" integrity="sha384-w1Q4orYjBQndcko6MimVbzY0tgp4pWB4lZ7lr30WKz0vr/aWKhXdBNmNb5D92v7s" crossorigin="anonymous"></script>
+    </body>
+</html>
