@@ -451,18 +451,25 @@ void initPinout()
   pinMode(BUTTON_PIN, INPUT);
   pinMode(PHOTO_SENSOR_PIN, INPUT);
 
-  ledcSetup(ledChannel1, ledFreq, ledResolution);
-  ledcAttachPin(LED_BUILTIN, ledChannel1); 
 
-  ledcSetup(ledChannel2, ledFreq, ledResolution);
-  ledcAttachPin(LIGHT_PIN, ledChannel2);
+  // ledcSetup(ledChannel1, ledFreq, ledResolution);
+  // ledcAttachPin(LED_BUILTIN, ledChannel1); 
+
+  
+  // ledcSetup(ledChannel2, ledFreq, ledResolution);
+  // ledcAttachPin(LIGHT_PIN, ledChannel2);
 
   for (int i = 0; i < 3; i++)
   {
-    ledcWrite(ledChannel1, 255);
+    analogWrite(LED_BUILTIN, 255);
     delay(500);
-    ledcWrite(ledChannel1, 0);
+    analogWrite(LED_BUILTIN, 0);
     delay(500);
+
+    // ledcWrite(ledChannel1, 255);
+    // delay(500);
+    // ledcWrite(ledChannel1, 0);
+    // delay(500);
   }
 }
 
@@ -534,7 +541,8 @@ void pressKey()
           lightValue++;
         }
         Serial.printf("LED LIGHT:[%c] => %d\r\n", cmd, lightValue);
-        ledcWrite(ledChannel2 , lightValue);
+        // ledcWrite(ledChannel2 , lightValue);
+        analogWrite(LIGHT_PIN, lightValue);
         break;
       case '6':
         if(lightValue <= 0)
@@ -546,7 +554,8 @@ void pressKey()
           lightValue--;
         }
         Serial.printf("LED LIGHT:[%c] => %d\r\n", cmd, lightValue);
-        ledcWrite(ledChannel2 , lightValue);
+        // ledcWrite(ledChannel2 , lightValue);
+        analogWrite(LIGHT_PIN, lightValue);
         break;
 
       case 'i':
@@ -583,8 +592,8 @@ void breathe(uint8_t _delay)
       breathingDirection = true;
     }
     
-
-    ledcWrite(ledChannel1, breathingValue);
+    analogWrite(LED_BUILTIN, breathingValue);
+    // ledcWrite(ledChannel1, breathingValue);
 
   }
 }
@@ -700,7 +709,8 @@ void setLED()
     
     if(millis() - lightTime > 100)
     {
-      ledcWrite(ledChannel2 , lightValue);
+      analogWrite(LIGHT_PIN, lightValue);
+      // ledcWrite(ledChannel2 , lightValue);
       myFS->saveSol(LittleFS, solenoidState, lightValue);
       sendSolenoid->LED_BRIGHTNESS = lightValue;
       setOLED();
@@ -788,7 +798,9 @@ void rs485Command()
           lightValue++;
         }
         Serial.printf("RS485 : [%c] => %d\r\n", cmd, lightValue);
-        ledcWrite(ledChannel2 , lightValue);
+        analogWrite(LIGHT_PIN, lightValue);
+        // ledcWrite(ledChannel2 , lightValue);
+
         break;
       case '4':
         if(lightValue <= 0)
@@ -800,7 +812,8 @@ void rs485Command()
           lightValue--;
         }
         Serial.printf("RS485 : [%c] => %d\r\n", cmd, lightValue);
-        ledcWrite(ledChannel2 , lightValue);
+        analogWrite(LIGHT_PIN, lightValue);
+        // ledcWrite(ledChannel2 , lightValue);
         break;
 
       default:

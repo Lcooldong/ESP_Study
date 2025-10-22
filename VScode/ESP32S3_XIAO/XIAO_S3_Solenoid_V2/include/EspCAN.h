@@ -2,8 +2,12 @@
 #define __ESP_CAN_H__
 
 #include <Arduino.h>
-#include <core_version.h>
 #include <ACAN_ESP32.h>
+
+// Version Flash
+#include <core_version.h>
+#include <esp_flash.h>
+#include <esp_chip_info.h>
 
 
 static const uint32_t DESIRED_BIT_RATE = 500UL * 1000UL;
