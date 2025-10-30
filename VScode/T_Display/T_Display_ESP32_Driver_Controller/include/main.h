@@ -19,7 +19,7 @@
 #include "MyButton.h"
 #include "MyBLECallback.h"
 
-#define BUTTON_PIN     GPIO_NUM_35 // GPIO pin for the button
+#define BUTTON_PIN     GPIO_NUM_38 // GPIO pin for the button
 
 #define ROTARY_CLK_PIN GPIO_NUM_32
 #define ROTARY_DT_PIN  GPIO_NUM_33
@@ -37,6 +37,10 @@
 #define AS5600_SCL_PIN GPIO_NUM_22
 #define AS5600_DIR_PIN GPIO_NUM_27
 
+#define UART1_RX_PIN  GPIO_NUM_13
+#define UART1_TX_PIN  GPIO_NUM_15
+
 void encoder_update();
+void indicate_led();
 
 #endif
