@@ -15,7 +15,7 @@ const char* switch_topic = "M5Stack/ATOM/PC_SWITCH/SWITCH";
 const char* state_topic = "M5Stack/ATOM/PC_SWITCH/STATE";
 
 const int neopixelPin = GPIO_NUM_27;
-const int RelayPin    = GPIO_NUM_32; // ATOM LITE  GND 5V G26 G32
+const int RelayPin    = GPIO_NUM_22; // ATOM LITE  GND 5V G26 G32 -> G22 PIN
 const int statePin    = GPIO_NUM_33; // Input Pin to read state
 
 const int neopixelCount = 1;
@@ -49,6 +49,7 @@ void setup() {
   M5.BtnA.setDebounceThresh(50);
   
   pinMode(RelayPin, OUTPUT);
+  digitalWrite(RelayPin, LOW);
   pixels.begin();
   setColor(255, 0, 0, 0, 10); // Turn off initially
   
