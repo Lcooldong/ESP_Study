@@ -76,3 +76,4 @@ void tft_clear(int16_t TFT_COLOR)
 {
   tft.fillScreen(TFT_COLOR);
 }
+
