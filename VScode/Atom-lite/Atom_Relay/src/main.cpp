@@ -142,7 +142,7 @@ void readState()
     lastStateTime = millis();
     pcState = analogRead(statePin);
     Serial.printf("PC STATE : %d\r\n", pcState);
-    if(pcState >= 4000)
+    if(pcState >= 1500 && pcState <= 2500) // 1.66 V 값 
     {
       client.publish(state_topic, "ON");
     }
