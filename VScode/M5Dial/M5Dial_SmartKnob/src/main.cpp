@@ -11,18 +11,30 @@
 #define UART_RX_PIN GPIO_NUM_1
 #define UART_TX_PIN GPIO_NUM_2
 
+const unsigned long IDLE_TIMEOUT = 300; // ms
+
+enum EncoderUIState {
+  UI_IDLE,
+  UI_CW,
+  UI_CCW
+};
 
 int prev_x = -1;
 int prev_y = -1;
-long oldPosition = -999;
-
 int counter = 0;
+int motorSpeed = 0;
 
-static m5::touch_state_t prev_state;
 AS5600 as5600;
 
-void EncoderTask();
+
+
+
+
+
+
+int EncoderTask(int multiplier);
 void ButtonTask();
+void TouchTask();
 void i2c_scan();
 
 void setup() {
@@ -63,15 +75,26 @@ void setup() {
   M5Dial.Display.drawString("Hello", 60, 80);
   M5Dial.Display.drawString("M5Dial!", 60, 120);
 
+  
+
   Serial.print("Test");
 }
 
 void loop() {
   M5Dial.update();
 
+  int motorDiff = EncoderTask(5);
+  
+  if(motorDiff != 0)
+  {
+    motorSpeed += motorDiff;
+    motorSpeed = constrain(motorSpeed, 0, 100);
+    Serial1.printf("Motor Speed: %d\r\n", motorSpeed);
+  }
 
-  EncoderTask();
+  
   ButtonTask();
+  TouchTask();
 
   static uint32_t lastMillis = 0;
   if (millis() - lastMillis > 1000) 
@@ -84,20 +107,55 @@ void loop() {
 }
 
 
-void EncoderTask()
+int EncoderTask(int multiplier = 1)
 {
   long newPosition = M5Dial.Encoder.read();
-  if (newPosition != oldPosition) {
-      M5Dial.Speaker.tone(8000, 20);
-      M5Dial.Display.clear();
-      oldPosition = newPosition;
-      Serial.println(newPosition);
-      M5Dial.Display.drawString(String(newPosition),
-                                M5Dial.Display.width() / 2,
-                                M5Dial.Display.height() / 2);
-  }
-}
+  unsigned long now = millis();
+  static EncoderUIState uiState = UI_IDLE;
+  static long oldPosition = 0;
+  static unsigned long lastMoveTime = 0;
 
+  // 1️⃣ 엔코더 움직임 감지
+  if (newPosition != oldPosition) {
+    int diff = newPosition - oldPosition;
+
+    uiState = (diff > 0) ? UI_CW : UI_CCW;
+    lastMoveTime = now;
+    oldPosition = newPosition;
+
+    // 화면 갱신 (움직일 때)
+    M5Dial.Display.clear();
+    M5Dial.Speaker.tone(8000, 20);
+
+    M5Dial.Display.drawString(
+      (uiState == UI_CW) ? "CW" : "CCW",
+      M5Dial.Display.width() / 2,
+      M5Dial.Display.height() / 2 - 30
+    );
+
+    M5Dial.Display.drawString(
+      String(newPosition),
+      M5Dial.Display.width() / 2,
+      M5Dial.Display.height() / 2
+    );
+
+    Serial.println(newPosition);
+    return diff * multiplier;
+  }
+
+  // 2️⃣ 일정 시간 이상 멈췄으면 IDLE
+  if (uiState != UI_IDLE && (now - lastMoveTime) > IDLE_TIMEOUT) {
+    uiState = UI_IDLE;
+
+    M5Dial.Display.clear();
+    M5Dial.Display.drawString(
+      "IDLE",
+      M5Dial.Display.width() / 2,
+      M5Dial.Display.height() / 2 - 30
+    );
+  }
+  return 0;
+}
 
 void ButtonTask()
 {
@@ -109,6 +167,38 @@ void ButtonTask()
   }
 }
 
+// t.state, t.x, t.y / prev_state, prev_x, prev_y
+void TouchTask()
+{
+  static m5::touch_state_t prev_state;
+  auto t = M5Dial.Touch.getDetail();
+    if (prev_state != t.state) {
+        prev_state = t.state;
+        // static constexpr const char* state_name[16] = {
+        //     "none", "touch", "touch_end", "touch_begin",
+        //     "___",  "hold",  "hold_end",  "hold_begin",
+        //     "___",  "flick", "flick_end", "flick_begin",
+        //     "___",  "drag",  "drag_end",  "drag_begin"};
+        // M5_LOGI("%s", state_name[t.state]);
+        // M5Dial.Display.fillRect(0, 0, M5Dial.Display.width(),
+        //                         M5Dial.Display.height() / 2, BLACK);
+
+        // M5Dial.Display.drawString(state_name[t.state],
+        //                           M5Dial.Display.width() / 2,
+        //                           M5Dial.Display.height() / 2 - 30);
+    }
+    if (prev_x != t.x || prev_y != t.y) {
+        // M5Dial.Display.fillRect(0, M5Dial.Display.height() / 2,
+        //                         M5Dial.Display.width(),
+        //                         M5Dial.Display.height() / 2, BLACK);
+        // M5Dial.Display.drawString(
+        //     "X:" + String(t.x) + " / " + "Y:" + String(t.y),
+        //     M5Dial.Display.width() / 2, M5Dial.Display.height() / 2 + 30);
+        prev_x = t.x;
+        prev_y = t.y;
+        // M5Dial.Display.drawPixel(prev_x, prev_y);
+    }
+}
 
 void i2c_scan()
 {
@@ -132,4 +222,14 @@ void i2c_scan()
   Serial.print ("Found ");
   Serial.print (i2c_counter, DEC);
   Serial.println (" device(s).");
+}
+
+void draw_function(LovyanGFX* gfx)
+{
+  gfx->fillScreen(0x000);
+  gfx->setTextColor(0xFFF);
+  gfx->setTextSize(2);
+  gfx->setTextDatum(middle_center);
+  gfx->drawString("Hello", 60, 80);
+  gfx->drawString("LovyanGFX!", 60, 120);
 }
