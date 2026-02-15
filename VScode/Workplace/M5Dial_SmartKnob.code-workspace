@@ -1,0 +1,27 @@
+{
+	"folders": [
+		{
+			"name": "M5Dial_SmartKnob",
+			"path": "../M5Dial/M5Dial_SmartKnob"
+		},
+		{
+			"name": "STM32F405_SimpleFOC",
+			"path": "../../../Arduino_Study/STM32/PlatformIO/STM32F405_SimpleFOC"
+		},
+		{
+			"name": "Teensy_Connector_Tester",
+			"path": "../../../Teensy_Study/Teensy_Connector_Tester"
+		},
+		{
+			"name": "Atom_S3R_WakeOnLAN",
+			"path": "../AtomS3/Atom_S3R_WakeOnLAN"
+		}
+	],
+	"settings": {
+		"stm32-for-vscode.openOCDPath": false,
+		"stm32-for-vscode.makePath": false,
+		"files.associations": {
+			"new": "cpp"
+		}
+	}
+}
