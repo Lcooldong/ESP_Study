@@ -29,10 +29,10 @@ enum UIPage
   PAGE_INFO
 };
 
-int numberOfMotors = 3; // 총 모터 수 3
-enum MotorType { P60_KV170, TMR_57, TBM_12913 };
+int numberOfMotors = 4; // 총 모터 수 4
+enum MotorType { P60_KV170, TMR_57, TMR_100, TBM_12913 };
 int motorSelection = 0;
-const char *motorNames[] = { "P60_KV170", "TMR_57", "TBM_12913" };
+const char *motorNames[] = { "P60_KV170", "TMR_57", "TMR_100", "TBM_12913" };
 
 UIPage currentPage = PAGE_HOME;
 int uiSelectedItem = 0;
@@ -304,6 +304,7 @@ void ButtonTask()
       break;
     case PAGE_ENCODER:
       motorSpeed = 0;
+      updateEncoderDisplay();
       Serial1.printf("V%d\n\r", motorSpeed);
       break;
     case PAGE_SETTINGS:
@@ -430,13 +431,16 @@ void updateSettingsDisplay()
   switch (motorSelection)
   {
   case P60_KV170:
-    heightOffset = -40;
+    heightOffset = -50;
     break;
   case TMR_57:
-    heightOffset = -10;
+    heightOffset = -20;
+    break;
+  case TMR_100:
+    heightOffset = 10;
     break;
   case TBM_12913:
-    heightOffset = 20;
+    heightOffset = 40;
     break;
   default:
     break;
@@ -454,17 +458,22 @@ void updateSettingsDisplay()
   M5Dial.Display.drawString(
     "P60 KV170 Motor",
     M5Dial.Display.width() / 2,
-    M5Dial.Display.height() / 2 - 30
+    M5Dial.Display.height() / 2 - 40
   );
   M5Dial.Display.drawString(
     "TMR 57 Motor",
     M5Dial.Display.width() / 2,
-    M5Dial.Display.height() / 2
+    M5Dial.Display.height() / 2 - 10
+  );
+  M5Dial.Display.drawString(
+    "TMR 100 Motor",
+    M5Dial.Display.width() / 2,
+    M5Dial.Display.height() / 2 + 20
   );
   M5Dial.Display.drawString(
     "TBM 12913 Motor",
     M5Dial.Display.width() / 2,
-    M5Dial.Display.height() / 2 + 30
+    M5Dial.Display.height() / 2 + 50
   );
 }
 
