@@ -6,12 +6,12 @@
 // PWM LED Driver Link
 // https://learn.adafruit.com/i31fl3731-16x9-charliplexed-pwm-led-driver/pinouts
 
-// Library 
+// Library
 // https://github.com/adafruit/Adafruit_IS31FL3731
 // https://github.com/adafruit/adafruit_neopixel
 // https://github.com/adafruit/Adafruit-gfx-library
 
-// LED Array Rule
+// LED Array Rule : 참고용(실사용X)
 // C1-1: A2->(A1), C1-2: A3->(A1) etc. [Start with->Except A1 (A2,A3,A4..)]/[Ended to A1] -> Cathode A1 
 // C2-1: A1->(A2), C2-2: A3->(A2) etc. [Start with->Except A2 (A1,A3,A4..)]/[Ended to A2] -> Cathode A2
 // C3-1: A1->(A3), C3-2: A2->(A3) etc. [Start with->Except A3 (A1,A2,A4..)]/[Ended to A3] -> Cathode A3
@@ -29,7 +29,13 @@
 // Anode -> 위 배치 표를 보고 선택
 // Cathode -> Row 를 보고 선택
 
-// 8x8 Matrix 제작시 A1 ~ A8 까지 사용
+/////////////////////////////////////////////////////////////
+// 8x8 Matrix 제작시 A1 ~ A8, B1~B8 까지 사용
+// ITO Pattern 에 대응
+// Scan Line (Row, Sink) : B1 ~ B8
+// Data Line (Column, Source) : A1 ~ A8
+// 예시: C2-3 을 제어하고 싶으면 A2 -> B3
+/////////////////////////////////////////////////////////////
 
 
 #include <Wire.h>
@@ -43,11 +49,17 @@
 #define NUM_PIXELS 1
 #define I2C_SDA_PIN 22
 #define I2C_SCL_PIN 19
+#define I2C_ADDR 0x74
+#define FD_REG_CONF 0x00      // 설정 레지스터
+#define FD_REG_PWM_START 0x24 // PWM 레지스터 시작 (Frame 0)
 
 Adafruit_NeoPixel pixels(NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 Adafruit_IS31FL3731 ledmatrix = Adafruit_IS31FL3731();  // Default I2C Address 0x74
-int count = 0;
 
+int count = 0;
+unsigned long prevMillis = 0;
+uint8_t ledValue = 0;
+bool ledDir = false;
 
 void setup() {
   Serial.begin(115200);
@@ -80,7 +92,31 @@ void setup() {
 
 void loop() {
 
+  unsigned long currMillis = millis();
+  if(currMillis - prevMillis >= 10){
+    prevMillis = currMillis;
+    
+    if(ledValue >= 50)
+    {
+      ledDir = false;
+    }
+    else if(ledValue <= 0)
+    {
+      ledDir = true;
+    }
 
+    if(ledDir)
+    {
+      ledValue++;
+    }
+    else
+    {
+      ledValue--;
+    }
+    // ledmatrix.drawPixel(0, 0, ledValue);
+    myDrawPixel(0,0, ledValue);
+    // Serial.printf("LED Value: %d\r\n", ledValue);
+  }
 
 
 
@@ -134,4 +170,25 @@ bool i2cCheck(int interval) {
   }
 
   return false;
+}
+
+void myDrawPixel(uint8_t x, uint8_t y, uint8_t brightness) {
+  if (x > 7 || y > 7) return;
+
+  // IS31FL3731의 Matrix B(CB핀) PWM 레지스터는 0x24부터 시작하며 
+  // 데이터시트 매핑에 따라 특정 규칙을 가집니다.
+  // A핀(Source)과 B핀(Sink) 사이의 매핑 주소 계산:
+  // Matrix B의 경우, 각 Row(CB)는 16바이트 간격으로 배치되는 경우가 많습니다.
+  
+  uint8_t regAddr = FD_REG_PWM_START + (y * 16) + x; 
+
+  writeRegister(0xFD, 0x00); // Frame 0 확인
+  writeRegister(regAddr, brightness);
+}
+
+void writeRegister(uint8_t reg, uint8_t data) {
+  Wire.beginTransmission(I2C_ADDR);
+  Wire.write(reg);
+  Wire.write(data);
+  Wire.endTransmission();
 }
