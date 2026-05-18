@@ -102,18 +102,36 @@ class BleTestClientApp(tk.Tk):
 
     async def connect_ble(self, device):
         try:
-            self.client = BleakClient(device.address)
+            # 윈도우 안정성을 위해 타임아웃 20초 지정
+            self.client = BleakClient(device.address, timeout=20.0)
             await self.client.connect()
             
-            # [추가] 연결 성공 직후, 아두이노의 Notify(실시간 알림) 수신을 활성화
+            # -----------------------------------------------------------------
+            # [핵심 추가] 연결 성공 직후, 보드 하드웨어에서 정식 기기 이름 강제 조회
+            # BLE 표준 규격 규정: 0x2A00 특성은 '장치 이름(Device Name)'을 반환합니다.
+            # -----------------------------------------------------------------
+            fetched_name = device.name
+            try:
+                # BLE 범용 액세스 프로필(GAP)의 디바이스 네임 표준 UUID 로직 가동
+                DEVICE_NAME_UUID = "00002a00-0000-1000-8000-00805f9b34fb"
+                name_bytes = await self.client.read_gatt_char(DEVICE_NAME_UUID)
+                fetched_name = name_bytes.decode('utf-8').strip()
+            except Exception:
+                # 만약 보드가 표준 GAP 조회를 막아두었다면, 스캔 시 이름이나 주소로 대체
+                if not fetched_name:
+                    fetched_name = f"ESP32 기기 [{device.address}]"
+
+            # 실시간 Notify(알림) 채널 개시
             await self.client.start_notify(CHARACTERISTIC_UUID, self.notification_handler)
             
-            self.run_in_main_thread(lambda: self.status_label.config(text=f"상태: 연결 성공! ({device.name})"))
+            # [수정] 위에서 받아온 정식 이름을 토대로 라벨 문구 업데이트 (Unknown 탈출!)
+            self.run_in_main_thread(lambda: self.status_label.config(text=f"상태: 연결 성공! ({fetched_name})"))
+            
             self.run_in_main_thread(lambda: self.connect_btn.config(state="normal", text="2. 연결 해제 (Disconnect)", fg="white", bg="#EC7063"))
             self.run_in_main_thread(lambda: self.led_on_btn.config(state="normal"))
             self.run_in_main_thread(lambda: self.led_off_btn.config(state="normal"))
             
-            # 처음 연결 시 보드에 설정된 초기 LED 상태 읽어오기 (수동 Read)
+            # 초기 LED 상태 피드백 읽기
             init_state = await self.client.read_gatt_char(CHARACTERISTIC_UUID)
             self.run_in_main_thread(lambda: self.update_hw_status_ui(init_state.decode('utf-8')))
             

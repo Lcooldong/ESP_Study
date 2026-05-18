@@ -34,7 +34,7 @@ class MyCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
             DEBUG_SERIAL.println(command);
 
             if (command == '1') {
-                digitalWrite(LED_BUILTIN, HIGH);  // 내장 LED 켜기
+                digitalWrite(LED_BUILTIN, LOW);  // 내장 LED 켜기
                 DEBUG_SERIAL.println("LED ON");
                 
                 // [변경] 현재의 상태('1')를 우체통에 세팅하고, 연결된 PC에 실시간 알림(Notify)을 보냄
@@ -42,7 +42,7 @@ class MyCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
                 pChar->notify();
             } 
             else if (command == '0') {
-                digitalWrite(LED_BUILTIN, LOW);   // 내장 LED 끄기
+                digitalWrite(LED_BUILTIN, HIGH);   // 내장 LED 끄기
                 DEBUG_SERIAL.println("LED OFF");
                 
                 // [변경] 현재의 상태('0')를 우체통에 세팅하고, 연결된 PC에 실시간 알림(Notify)을 보냄
@@ -60,6 +60,8 @@ void setup() {
   digitalWrite(LED_BUILTIN, HIGH); // HIGH is OFF
 
   NimBLEDevice::init("ESP32_BLE_TestPin");
+  DEBUG_SERIAL.print("★ 이 보드의 BLE MAC 주소: ");
+  DEBUG_SERIAL.println(NimBLEDevice::getAddress().toString().c_str());
 
   pServer = NimBLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
