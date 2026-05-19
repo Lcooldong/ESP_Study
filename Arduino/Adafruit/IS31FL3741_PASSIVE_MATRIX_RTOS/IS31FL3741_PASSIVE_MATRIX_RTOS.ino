@@ -22,8 +22,10 @@
 #define UART_TX           43
 #define UART_RX           44
 
-const int MATRIX_WIDTH = 8;   
-const int MATRIX_HEIGHT = 8;  
+const int MATRIX_WIDTH    = 8;   
+const int MATRIX_HEIGHT   = 8;  
+const int HEADER_CURSOR_X = 20;
+const int HEADER_CURSOR_Y = 20; 
 
 Adafruit_IS31FL3741 ledMatrix;
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
@@ -32,8 +34,8 @@ NimBLEServer* pServer = nullptr;
 NimBLECharacteristic* pCharacteristic = nullptr;
 
 // 전역 자원 (두 코어가 공유하는 데이터)
-uint8_t ledBuffer[MATRIX_WIDTH * MATRIX_HEIGHT] = {0,};
-uint8_t lastTftBuffer[MATRIX_WIDTH * MATRIX_HEIGHT] = {255,}; // 화면 부분 갱신(Delta)용 캐시
+uint8_t ledBuffer[MATRIX_WIDTH * MATRIX_HEIGHT * 3] = {0,};
+uint8_t lastTftBuffer[MATRIX_WIDTH * MATRIX_HEIGHT * 3] = {255,}; // 화면 부분 갱신(Delta)용 캐시
 
 uint8_t tftR = 0;
 uint8_t tftG = 255;
@@ -59,6 +61,7 @@ void buttonInit(uint8_t button_pin);
 void buttonTask();
 bool i2cCheckSingleShot();
 void breath(int interval);
+void initTFTDisplay(const char* address);
 
 // BLE 서버 연결 상태 콜백
 class MyServerCallbacks : public NimBLEServerCallbacks {
@@ -79,42 +82,23 @@ class MyCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
     void onWrite(NimBLECharacteristic* pChar, NimBLEConnInfo& connInfo) override {
         std::string value = pChar->getValue();
         
-        if (value.length() == 64) {
-            // 스트리밍 데이터 (64바이트)
-            memcpy(ledBuffer, value.data(), 64);
+        // [수정] 64에서 192바이트로 변경!
+        if (value.length() == 192) {
+            memcpy(ledBuffer, value.data(), 192);
         } 
-        else if (value.length() == 3) {
-            // [추가] 색상 변경 명령어 (3바이트: R, G, B)
-            tftR = value[0];
-            tftG = value[1];
-            tftB = value[2];
-            
-            // 색상이 완전히 바뀌었으므로, 다음 루프 때 모든 격자를 
-            // 강제로 다시 그리도록 캐시 버퍼를 초기화해 줍니다.
-            memset(lastTftBuffer, 255, sizeof(lastTftBuffer));
-            
-            DEBUG_SERIAL.printf("TFT 색상 변경됨 -> R:%d, G:%d, B:%d\n", tftR, tftG, tftB);
-        }
     }
 };
 
 void setup() {
   DEBUG_SERIAL.begin(115200);
+  NimBLEDevice::init("ESP32_NimBLE_MATRIX");
 
   // 1. TFT 기본 부팅 레이아웃 초기화
-  tft.init(240, 280);
-  tft.fillScreen(ST77XX_BLACK);
-  tft.setCursor(20, 20);
-  tft.setTextSize(2);
-  tft.setTextColor(ST77XX_GREEN);
-  tft.print("Start LED Matrix");
+  memset(lastTftBuffer, 255, sizeof(lastTftBuffer));
+  std::string myMacAddress = NimBLEDevice::getAddress().toString();
+  
+  initTFTDisplay(myMacAddress.c_str());
 
-  tft.setCursor(20, 40);
-  tft.setTextSize(1);
-  tft.setTextColor(ST77XX_RED);
-  tft.print("BLE: DISCONNECTED");
-
-  tft.drawRect(38, 68, 164, 164, ST77XX_WHITE);
 
   // 2. 물리 핀 및 입력부 세팅
   pinMode(LED_BUILTIN, OUTPUT); 
@@ -212,11 +196,21 @@ void Task_DisplayHardware_Code(void * pvParameters) {
     // 3. I2C 8x8 매트릭스 LED 리프레시 (30ms 주기, 약 33 FPS 제한)
     if (curMillis - matrixUpdateMillis >= 30) {
       matrixUpdateMillis = curMillis;
-      for (int y = 0; y < MATRIX_HEIGHT; y++) {
-        for (int x = 0; x < MATRIX_WIDTH; x++) {
-          uint8_t brightness = ledBuffer[(y * MATRIX_WIDTH) + x];
-          drawMonoPixel(x, y, brightness);
-        }
+      for (int i = 0; i < 64; i++) {
+        int y = i / 8;
+        int x = i % 8;
+        
+        // 192바이트 배열에서 해당 픽셀의 파이썬 수신 RGB 값 추출
+        uint8_t r = ledBuffer[i*3];
+        uint8_t g = ledBuffer[i*3+1];
+        uint8_t b = ledBuffer[i*3+2];
+        
+        // ★ [핵심] 수신된 RGB 값 중 가장 강한(가장 밝은) 값을 물리 LED의 단색 밝기로 취합니다.
+        uint8_t max_val = r;
+        if (g > max_val) max_val = g;
+        if (b > max_val) max_val = b;
+        
+        drawMonoPixel(x, y, max_val);
       }
     }
     
@@ -230,8 +224,8 @@ void Task_DisplayHardware_Code(void * pvParameters) {
     if (currentBleConnected != lastBleConnected) {
       lastBleConnected = currentBleConnected; 
 
-      tft.fillRect(20, 40, 200, 20, ST77XX_BLACK); 
-      tft.setCursor(20, 40);
+      tft.fillRect(20, HEADER_CURSOR_Y + 40, 200, 20, ST77XX_BLACK); 
+      tft.setCursor(20, HEADER_CURSOR_Y + 40);
       tft.setTextSize(1);
 
       if (currentBleConnected) {
@@ -252,7 +246,7 @@ void Task_DisplayHardware_Code(void * pvParameters) {
 // --- 하위 유틸리티 함수 스펙 유지 ---
 
 void initBLE(){
-  NimBLEDevice::init("ESP32_NimBLE_MATRIX");
+  
   pServer = NimBLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
 
@@ -278,34 +272,34 @@ void initBLE(){
 
 void updateTftDisplay() {
   int startX = 40;  
-  int startY = 70; 
+  int startY = HEADER_CURSOR_Y + 60; 
   int blockSize = 18; 
   int gap = 2;        
 
-  for (int y = 0; y < MATRIX_HEIGHT; y++) {
-    for (int x = 0; x < MATRIX_WIDTH; x++) {
-      int index = (y * MATRIX_WIDTH) + x;
-      uint8_t currentBrightness = ledBuffer[index];
-
-      // 이전 화면과 밝기가 다를 때(또는 색상 변경으로 캐시가 초기화됐을 때)만 그립니다.
-      if (currentBrightness != lastTftBuffer[index]) {
-        lastTftBuffer[index] = currentBrightness; // 캐시 갱신
-        
-        // [수정] 수신된 흑백 밝기(0~255)를 기준 색상에 곱해서 농도 조절
-        uint8_t r = (tftR * currentBrightness) / 255;
-        uint8_t g = (tftG * currentBrightness) / 255;
-        uint8_t b = (tftB * currentBrightness) / 255;
-        
-        uint16_t blockColor = tft.color565(r, g, b); 
-        
-        if (currentBrightness == 0) {
-          blockColor = tft.color565(40, 40, 40); // 꺼졌을 때는 기본 짙은 회색
-        }
-        
-        tft.fillRect(startX + (x * (blockSize + gap)), 
-                     startY + (y * (blockSize + gap)), 
-                     blockSize, blockSize, blockColor);
+  // 192바이트를 순회하며 개별 픽셀을 풀 컬러로 렌더링
+  for(int i=0; i<64; i++){
+    uint8_t r = ledBuffer[i*3];
+    uint8_t g = ledBuffer[i*3+1];
+    uint8_t b = ledBuffer[i*3+2];
+    
+    // 이전 화면과 RGB 3가지 중 하나라도 다르면 그 픽셀을 갱신합니다.
+    if(r != lastTftBuffer[i*3] || g != lastTftBuffer[i*3+1] || b != lastTftBuffer[i*3+2]) {
+      lastTftBuffer[i*3] = r;
+      lastTftBuffer[i*3+1] = g;
+      lastTftBuffer[i*3+2] = b;
+      
+      uint16_t blockColor = tft.color565(r, g, b);
+      
+      // 완전히 꺼졌을 때는 기본 테마인 짙은 회색으로 표현
+      if(r == 0 && g == 0 && b == 0) {
+        blockColor = tft.color565(40, 40, 40);
       }
+      
+      int y = i / 8;
+      int x = i % 8;
+      tft.fillRect(startX + (x * (blockSize + gap)), 
+                   startY + (y * (blockSize + gap)), 
+                   blockSize, blockSize, blockColor);
     }
   }
 }
@@ -385,4 +379,26 @@ void breath(int interval) {
       breathAmount = 1;  
     }
   }
+}
+
+void initTFTDisplay(const char* address){
+  tft.init(240, 280);
+  tft.fillScreen(ST77XX_BLACK);
+  tft.setCursor(20, HEADER_CURSOR_Y);
+  tft.setTextSize(2);
+  tft.setTextColor(ST77XX_GREEN);
+  tft.print("Start LED Matrix");
+
+  tft.setCursor(20, HEADER_CURSOR_Y + 25);
+  tft.setTextSize(1);
+  tft.setTextColor(ST77XX_WHITE);
+  tft.print("MAC: ");
+  tft.print(address);
+
+  tft.setCursor(20, HEADER_CURSOR_Y + 40);
+  tft.setTextSize(1);
+  tft.setTextColor(ST77XX_RED);
+  tft.print("BLE: DISCONNECTED");
+
+  tft.drawRect(38, HEADER_CURSOR_Y + 58, 164, 164, ST77XX_WHITE);
 }
