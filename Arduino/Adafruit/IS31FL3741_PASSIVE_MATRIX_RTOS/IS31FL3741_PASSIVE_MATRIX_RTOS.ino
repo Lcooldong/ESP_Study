@@ -5,6 +5,7 @@
 #include <SPI.h>
 
 #include "Button.h"
+#include "Animation.h"
 
 #define DEBUG_SERIAL Serial
 
@@ -46,6 +47,7 @@ bool lastBleConnected = false;
 
 Button myBtn(SWITCH_PIN, true, 50);
 bool longPressExecuted = false;
+int currentAnimationMode = 0;
 
 // FreeRTOS 타스크 핸들 선언
 TaskHandle_t hTask_BLE = NULL;
@@ -189,7 +191,14 @@ void Task_DisplayHardware_Code(void * pvParameters) {
     
     // 1. 버튼 스캔 인터럽트 태스크
     buttonTask();
-    
+    if (!currentBleConnected) {
+      if (currentAnimationMode > 0) {
+        updateAnimation(currentAnimationMode);
+      } else {
+        memset(ledBuffer, 0, 192); // 모드 0이면 끄기
+      }
+    }
+
     // 2. 내장 LED 숨쉬기 효과 (Non-Blocking)
     breath(5);
 
@@ -214,8 +223,8 @@ void Task_DisplayHardware_Code(void * pvParameters) {
       }
     }
     
-    // 4. SPI TFT LCD 모니터링 창 갱신 (50ms 주기, 부드러운 드로잉 제어)
-    if (curMillis - tftUpdateMillis >= 30) {
+    // 4. SPI TFT LCD 모니터링 창 갱신 (20ms 주기, 부드러운 드로잉 제어)
+    if (curMillis - tftUpdateMillis >= 20) {
       tftUpdateMillis = curMillis;
       updateTftDisplay();
     }
@@ -224,7 +233,7 @@ void Task_DisplayHardware_Code(void * pvParameters) {
     if (currentBleConnected != lastBleConnected) {
       lastBleConnected = currentBleConnected; 
 
-      tft.fillRect(20, HEADER_CURSOR_Y + 40, 200, 20, ST77XX_BLACK); 
+      tft.fillRect(20, HEADER_CURSOR_Y + 40, 200, 15, ST77XX_BLACK); 
       tft.setCursor(20, HEADER_CURSOR_Y + 40);
       tft.setTextSize(1);
 
@@ -326,16 +335,22 @@ void buttonTask(){
   myBtn.read();
   if (myBtn.pressedFor(2000)) {
       if (!longPressExecuted) {
-          DEBUG_SERIAL.println("--- 2 Seconds Reached! Controlling Gripper Immediate ---");
-          longPressExecuted = true; 
+          DEBUG_SERIAL.println("--- 2 Seconds Reached! ---"); // 2초간 눌렀을 때
+          longPressExecuted = true;
+          ESP.restart();
       }
   }
   if (myBtn.wasReleased()) {
       if (longPressExecuted) {
           longPressExecuted = false; 
-          DEBUG_SERIAL.println("Button Released after Long Press (Gripper Done)");
+          DEBUG_SERIAL.println("Button Released after Long Press"); // 2초 동안 누르고 땠을 때
+          // digitalWrite(LED_BUILTIN, LOW);
       } else {
-          DEBUG_SERIAL.println("--- Short Press Detected on Release: Controlling Pusher ---");
+          DEBUG_SERIAL.println("--- Short Press Detected");         // 짧게 눌렀을 때
+          currentAnimationMode++;
+          if (currentAnimationMode > 3) currentAnimationMode = 0; // 3번 모드 다음엔 0(꺼짐)으로
+          DEBUG_SERIAL.printf("Animation Mode Changed to: %d\n", currentAnimationMode);
+          // digitalWrite(LED_BUILTIN, HIGH);
       }
   }
 }

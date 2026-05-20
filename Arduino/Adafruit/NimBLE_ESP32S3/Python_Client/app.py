@@ -3,8 +3,7 @@ import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from bleak import BleakScanner, BleakClient
-import cv2  # 영상 처리용
-from PIL import Image, ImageSequence, ImageTk
+from PIL import Image, ImageSequence, ImageDraw, ImageFont
 import numpy as np
 
 CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8"
@@ -13,13 +12,12 @@ class LedStreamerApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("8x8 LED Matrix RGB Controller")
-        self.geometry("500x980") # 버튼이 많아져서 창 길이를 늘림
+        self.geometry("500x950")
         self.configure(bg="#222222")
         
         self.client = None
         self.ble_loop = None
         self.is_streaming = False
-        self.is_paused = False
         self.gif_frames = []
         self.stream_type = "gif"
         self.active_popup = None
@@ -35,15 +33,8 @@ class LedStreamerApp(tk.Tk):
         self.status_label = tk.Label(self, text="상태: 장치 스캔을 시작해 주세요.", fg="white", bg="#222222", font=("맑은 고딕", 11, "bold"))
         self.status_label.pack(pady=10)
 
-        self.file_info_label = tk.Label(self, text="현재 파일: 선택되지 않음", fg="#F1C40F", bg="#222222", font=("맑은 고딕", 9))
+        self.file_info_label = tk.Label(self, text="현재 파일: 없음", fg="#F1C40F", bg="#222222", font=("맑은 고딕", 9))
         self.file_info_label.pack(pady=2)
-
-        # [미디어 제어 버튼] 추가
-        ctrl_frame = tk.Frame(self, bg="#222222")
-        ctrl_frame.pack(pady=5)
-        tk.Button(ctrl_frame, text="▶ 재생", width=10, command=lambda: setattr(self, 'is_paused', False)).pack(side=tk.LEFT, padx=5)
-        tk.Button(ctrl_frame, text="⏸ 일시정지", width=10, command=lambda: setattr(self, 'is_paused', True)).pack(side=tk.LEFT, padx=5)
-        tk.Button(ctrl_frame, text="⏹ 정지", width=10, command=self.stop_media).pack(side=tk.LEFT, padx=5)
 
         self.device_listbox = tk.Listbox(self, width=55, height=6, bg="#333333", fg="white", selectbackground="#444444", font=("맑은 고딕", 10))
         self.device_listbox.pack(pady=5)
@@ -58,23 +49,20 @@ class LedStreamerApp(tk.Tk):
         self.connect_btn.pack(side=tk.LEFT, padx=5)
 
         grid_container = tk.Frame(self, bg="#333333", bd=2, relief="sunken")
-        grid_container.pack(pady=15)
+        grid_container.pack(pady=10)
         
         tk.Label(grid_container, text="[ 풀컬러 픽셀 캔버스 ] 칸 또는 R/C 버튼을 눌러 색상을 조절하세요", bg="#333333", fg="#AAAAAA", font=("맑은 고딕", 9)).pack(pady=5)
 
         self.grid_frame = tk.Frame(grid_container, bg="#111111")
         self.grid_frame.pack(padx=10, pady=10)
 
-        # R0와 C0 사이 교차 공간(0행, 0열)에 전체 초기화 버튼 생성
         self.reset_btn = tk.Button(self.grid_frame, text="초기화", bg="#922B21", fg="white", font=("맑은 고딕", 7, "bold"), command=self.reset_all_pixels)
         self.reset_btn.grid(row=0, column=0, padx=2, pady=2, sticky="nsew")
 
-        # 열(Column) 제어 버튼 생성
         for x in range(8):
             btn = tk.Button(self.grid_frame, text=f"C{x}", bg="#555555", fg="white", font=("맑은 고딕", 8, "bold"), command=lambda cx=x: self.open_line_popup('col', cx))
             btn.grid(row=0, column=x+1, padx=1, pady=2, sticky="nsew")
 
-        # 행(Row) 제어 버튼 생성
         for y in range(8):
             btn = tk.Button(self.grid_frame, text=f"R{y}", bg="#555555", fg="white", font=("맑은 고딕", 8, "bold"), command=lambda cy=y: self.open_line_popup('row', cy))
             btn.grid(row=y+1, column=0, padx=2, pady=1, sticky="nsew")
@@ -87,8 +75,17 @@ class LedStreamerApp(tk.Tk):
                 canvas.bind("<Button-1>", lambda event, cx=x, cy=y: self.open_pixel_popup(cx, cy))
                 self.cells[(x, y)] = canvas
 
-        self.file_btn = tk.Button(self, text="📁 이미지/GIF/영상 파일 스트리밍", width=42, height=2, command=self.load_media)
-        self.file_btn.pack(pady=5)
+        self.file_btn = tk.Button(self, text="3. 단일 이미지 및 GIF 파일 불러오기", width=42, height=2, state="disabled", command=self.load_media)
+        self.file_btn.pack(pady=3)
+
+        # [신규] 텍스트 스크롤 영역
+        text_frame = tk.Frame(self, bg="#222222")
+        text_frame.pack(pady=3)
+        self.text_entry = tk.Entry(text_frame, width=28, font=("맑은 고딕", 10))
+        self.text_entry.insert(0, "HELLO")
+        self.text_entry.pack(side=tk.LEFT, padx=5)
+        self.text_send_btn = tk.Button(text_frame, text="전광판 전송", state="disabled", bg="#3498DB", fg="white", font=("맑은 고딕", 9, "bold"), command=self.start_text_scroll)
+        self.text_send_btn.pack(side=tk.LEFT)
 
         self.test_btn = tk.Button(self, text="4. 기본 체커보드 패턴 스트리밍", width=42, height=2, state="disabled", fg="#222222", bg="#A3E4D7", font=("맑은 고딕", 9, "bold"), command=self.start_test_pattern)
         self.test_btn.pack(pady=3)
@@ -96,77 +93,14 @@ class LedStreamerApp(tk.Tk):
         self.move_test_btn = tk.Button(self, text="5. 순차적 픽셀 이동 테스트", width=42, height=2, state="disabled", fg="#222222", bg="#F9E79F", font=("맑은 고딕", 9, "bold"), command=self.start_moving_pixel_test)
         self.move_test_btn.pack(pady=3)
 
+        # [신규] 물방울 번짐 효과 버튼
+        self.ripple_btn = tk.Button(self, text="6. 물결(Ripple) 퍼짐 애니메이션", width=42, height=2, state="disabled", fg="white", bg="#8E44AD", font=("맑은 고딕", 9, "bold"), command=self.start_ripple_effect)
+        self.ripple_btn.pack(pady=3)
+
         self.stop_btn = tk.Button(self, text="🛑 화면 끄기 (설정된 색상 유지)", width=42, height=2, state="disabled", bg="#C0392B", fg="white", font=("맑은 고딕", 9, "bold"), command=self.clear_screen)
         self.stop_btn.pack(pady=3)
 
         self.refresh_all_canvases()
-
-    def load_media(self):
-        path = filedialog.askopenfilename(filetypes=[("Media", "*.gif *.mp4 *.png *.jpg *.jpeg")])
-        if not path: return
-        
-        file_name = path.split('/')[-1]
-        self.file_info_label.config(text=f"현재 파일: {file_name}")
-        
-        self.is_streaming = False # 일단 기존 작업 중단
-        self.gif_frames = []
-        
-        ext = path.split('.')[-1].lower()
-        
-        if ext == 'gif':
-            self.stream_type = "gif"
-            im = Image.open(path)
-            for frame in ImageSequence.Iterator(im):
-                self.gif_frames.append(self.process_frame(frame))
-            self.is_streaming = True
-            asyncio.run_coroutine_threadsafe(self.stream_gif(), self.ble_loop)
-            
-        elif ext in ['mp4', 'avi']:
-            self.stream_type = "media"
-            # ... (영상 처리 로직) ...
-            self.is_streaming = True
-            asyncio.run_coroutine_threadsafe(self.stream_gif(), self.ble_loop)
-            
-        else: # 일반 이미지 처리
-            self.stream_type = "media"
-            img = Image.open(path).convert("RGBA")
-            arr = np.array(img.resize((8, 8), Image.Resampling.LANCZOS))
-            
-            frame_bytes = bytearray(192)
-            for y in range(8):
-                for x in range(8):
-                    r, g, b, a = arr[y, x]
-                    i = y * 8 + x
-                    # 배경 제거 로직
-                    if a < 128 or (r > 240 and g > 240 and b > 240):
-                        frame_bytes[i*3] = frame_bytes[i*3+1] = frame_bytes[i*3+2] = 0
-                    else:
-                        frame_bytes[i*3], frame_bytes[i*3+1], frame_bytes[i*3+2] = int(r), int(g), int(b)
-            
-            # [핵심] 이미지일 때는 스트리밍 없이 강제로 데이터 적용
-            self.is_streaming = False 
-            # 픽셀 데이터 업데이트
-            for i in range(64):
-                self.pixels[i]['r'] = frame_bytes[i*3]
-                self.pixels[i]['g'] = frame_bytes[i*3+1]
-                self.pixels[i]['b'] = frame_bytes[i*3+2]
-                self.pixels[i]['br'] = 255 if (frame_bytes[i*3]>0 or frame_bytes[i*3+1]>0 or frame_bytes[i*3+2]>0) else 0
-            
-            self.refresh_all_canvases() # UI 갱신
-            self.send_custom_frame()    # 보드로 즉시 전송
-
-    def process_frame(self, pil_img):
-        resized = pil_img.convert("RGB").resize((8, 8), Image.Resampling.LANCZOS)
-        rgb_data = list(resized.getdata())
-        frame_bytes = bytearray(192)
-        for i, (r, g, b) in enumerate(rgb_data):
-            frame_bytes[i*3], frame_bytes[i*3+1], frame_bytes[i*3+2] = r, g, b
-        return frame_bytes
-
-    def stop_media(self):
-        self.is_streaming = False
-        self.is_paused = False
-        self.clear_screen() # 화면 끄기 로직 호출
 
     def reset_all_pixels(self):
         self.is_streaming = False 
@@ -199,7 +133,6 @@ class LedStreamerApp(tk.Tk):
 
     def open_pixel_popup(self, x, y):
         self._close_existing_popup() 
-
         popup = tk.Toplevel(self)
         self.active_popup = popup 
         popup.geometry("280x240")
@@ -256,7 +189,6 @@ class LedStreamerApp(tk.Tk):
 
     def open_line_popup(self, mode, index):
         self._close_existing_popup() 
-
         popup = tk.Toplevel(self)
         self.active_popup = popup 
         popup.geometry("280x240")
@@ -407,8 +339,10 @@ class LedStreamerApp(tk.Tk):
             self.run_in_main_thread(lambda: self.status_label.config(text=f"상태: 연결 성공! ({device.name})"))
             self.run_in_main_thread(lambda: self.connect_btn.config(state="normal", text="2. 연결 해제", fg="white", bg="#EC7063"))
             self.run_in_main_thread(lambda: self.file_btn.config(state="normal"))
+            self.run_in_main_thread(lambda: self.text_send_btn.config(state="normal"))
             self.run_in_main_thread(lambda: self.test_btn.config(state="normal")) 
             self.run_in_main_thread(lambda: self.move_test_btn.config(state="normal")) 
+            self.run_in_main_thread(lambda: self.ripple_btn.config(state="normal")) 
             self.run_in_main_thread(lambda: self.stop_btn.config(state="normal")) 
         except Exception as e:
             self.run_in_main_thread(lambda: self.status_label.config(text=f"연결 실패: {str(e)}"))
@@ -429,47 +363,108 @@ class LedStreamerApp(tk.Tk):
         self.connect_btn.config(state="normal", text="2. 장치 연결", fg="black", bg="#F0F0F0")
         self.scan_btn.config(state="normal")
         self.file_btn.config(state="disabled")
+        self.text_send_btn.config(state="disabled")
         self.test_btn.config(state="disabled")
         self.move_test_btn.config(state="disabled")
+        self.ripple_btn.config(state="disabled")
         self.stop_btn.config(state="disabled") 
 
-    def load_gif(self):
-        file_path = filedialog.askopenfilename(filetypes=[("GIF files", "*.gif")])
-        if not file_path: return
-        try:
-            self.is_streaming = False 
+    def load_media(self):
+        path = filedialog.askopenfilename(filetypes=[("Image/GIF", "*.gif *.png *.jpg *.jpeg")])
+        if not path: return
+        
+        file_name = path.split('/')[-1]
+        self.file_info_label.config(text=f"현재 파일: {file_name}")
+        self.is_streaming = False 
+        self.gif_frames = []
+        
+        ext = path.split('.')[-1].lower()
+        if ext == 'gif':
             self.stream_type = "gif" 
-            with Image.open(file_path) as im:
-                self.gif_frames.clear()
+            with Image.open(path) as im:
                 self.frame_duration = im.info.get('duration', 50) / 1000.0 
                 for frame in ImageSequence.Iterator(im):
                     resized = frame.convert("RGB").resize((8, 8), Image.Resampling.LANCZOS)
-                    rgb_data = resized.getdata()
-                    
+                    rgb_data = list(resized.getdata())
                     frame_bytes = bytearray(192)
                     for i, (r, g, b) in enumerate(rgb_data):
-                        frame_bytes[i*3]     = r
-                        frame_bytes[i*3 + 1] = g
-                        frame_bytes[i*3 + 2] = b
+                        frame_bytes[i*3], frame_bytes[i*3+1], frame_bytes[i*3+2] = r, g, b
                     self.gif_frames.append(frame_bytes)
-                    
-            self.status_label.config(text=f"상태: GIF 전송 중 ({len(self.gif_frames)} 프레임)")
             self.is_streaming = True
             asyncio.run_coroutine_threadsafe(self.stream_gif(), self.ble_loop)
-        except Exception as e:
-            self.status_label.config(text=f"GIF 변환 실패: {str(e)}")
+            
+        else: # 일반 이미지
+            img = Image.open(path).convert("RGBA")
+            arr = np.array(img.resize((8, 8), Image.Resampling.LANCZOS))
+            frame_bytes = bytearray(192)
+            for y in range(8):
+                for x in range(8):
+                    r, g, b, a = arr[y, x]
+                    i = y * 8 + x
+                    if a < 128 or (r > 240 and g > 240 and b > 240):
+                        frame_bytes[i*3] = frame_bytes[i*3+1] = frame_bytes[i*3+2] = 0
+                    else:
+                        frame_bytes[i*3], frame_bytes[i*3+1], frame_bytes[i*3+2] = int(r), int(g), int(b)
+                        
+            self.is_streaming = False 
+            for i in range(64):
+                self.pixels[i]['r'] = frame_bytes[i*3]
+                self.pixels[i]['g'] = frame_bytes[i*3+1]
+                self.pixels[i]['b'] = frame_bytes[i*3+2]
+                self.pixels[i]['br'] = 255 if (frame_bytes[i*3]>0 or frame_bytes[i*3+1]>0 or frame_bytes[i*3+2]>0) else 0
+            
+            self.refresh_all_canvases() 
+            self.send_custom_frame() 
 
-    # --- [수정] 4. 체커보드 패턴 스트리밍 토글 처리 ---
+    # --- [신규] 텍스트 스크롤러 기능 ---
+    def start_text_scroll(self):
+        if self.is_streaming and self.stream_type == "scroll":
+            self.clear_screen()
+            return
+            
+        text = self.text_entry.get()
+        if not text: return
+        
+        self.is_streaming = False
+        self.stream_type = "scroll"
+        self.status_label.config(text=f"상태: 텍스트 스크롤 중 ('{text}')")
+        
+        # 기본 폰트로 텍스트를 그린 후 프레임별로 8x8 크기만큼 잘라냅니다.
+        font = ImageFont.load_default()
+        try:
+            w = font.getbbox(text)[2]
+        except AttributeError:
+            w = font.getsize(text)[0]
+            
+        img_w = w + 16 # 화면 밖에서 들어오고 나가도록 여백 추가
+        img = Image.new("L", (img_w, 8), "black")
+        draw = ImageDraw.Draw(img)
+        draw.text((8, -2), text, fill="white", font=font)
+        
+        self.gif_frames.clear()
+        self.frame_duration = 0.1
+        
+        for offset in range(img_w - 7):
+            cropped = img.crop((offset, 0, offset+8, 8))
+            
+            # numpy를 사용해 이미지를 바로 배열로 변환하고 1차원(flatten)으로 폅니다.
+            arr = np.array(cropped).flatten()
+            
+            # 배열을 그대로 bytearray로 감싸주면 끝! (경고 해결 및 속도 향상)
+            mask_frame = bytearray(arr)
+            
+            self.gif_frames.append(mask_frame)
+            
+        self.is_streaming = True
+        asyncio.run_coroutine_threadsafe(self.stream_gif(), self.ble_loop)
+
     def start_test_pattern(self):
-        # 이미 체커보드가 작동 중일 때 연속으로 버튼을 누르면 정지(clear_screen) 처리
         if self.is_streaming and self.stream_type == "checker":
             self.clear_screen()
             return
-
         self.is_streaming = False 
         self.stream_type = "checker" 
         self.status_label.config(text="상태: 커스텀 컬러 체커보드 테스트 중...")
-        
         self.gif_frames.clear()
         self.frame_duration = 0.1 
 
@@ -477,30 +472,51 @@ class LedStreamerApp(tk.Tk):
             mask_frame = bytearray(64)
             for y in range(8):
                 for x in range(8):
-                    if (x + y + frame_step) % 2 == 0:
-                        mask_frame[y * 8 + x] = 255 
+                    if (x + y + frame_step) % 2 == 0: mask_frame[y * 8 + x] = 255 
             self.gif_frames.append(mask_frame)
 
         self.is_streaming = True
         asyncio.run_coroutine_threadsafe(self.stream_gif(), self.ble_loop)
 
-    # --- [수정] 5. 순차적 픽셀 이동 테스트 토글 처리 ---
     def start_moving_pixel_test(self):
-        # 이미 픽셀 이동 테스트가 작동 중일 때 연속으로 버튼을 누르면 정지(clear_screen) 처리
         if self.is_streaming and self.stream_type == "moving":
             self.clear_screen()
             return
-
         self.is_streaming = False 
         self.stream_type = "moving" 
         self.status_label.config(text="상태: 커스텀 컬러 단일 픽셀 순차 이동 테스트 중...")
-        
         self.gif_frames.clear()
         self.frame_duration = 0.08 
-        
         for i in range(64):
             mask_frame = bytearray(64)
             mask_frame[i] = 255 
+            self.gif_frames.append(mask_frame)
+        self.is_streaming = True
+        asyncio.run_coroutine_threadsafe(self.stream_gif(), self.ble_loop)
+
+    # --- [신규] 물방울 번짐 애니메이션 ---
+    def start_ripple_effect(self):
+        if self.is_streaming and self.stream_type == "ripple":
+            self.clear_screen()
+            return
+            
+        self.is_streaming = False 
+        self.stream_type = "ripple" 
+        self.status_label.config(text="상태: 물결(Ripple) 퍼짐 애니메이션 재생 중...")
+        self.gif_frames.clear()
+        self.frame_duration = 0.05 
+        
+        frames_count = 30 # 한 사이클을 30프레임으로 부드럽게 나눔
+        for t in range(frames_count):
+            mask_frame = bytearray(64)
+            for y in range(8):
+                for x in range(8):
+                    # 매트릭스 중앙(3.5, 3.5)으로부터의 거리 계산
+                    dist = np.sqrt((x-3.5)**2 + (y-3.5)**2)
+                    # 거리와 프레임 시간(t)에 비례하여 물결 파동(sin) 계산
+                    phase = dist * 1.5 - (t / frames_count) * 2 * np.pi
+                    val = int(127 * (np.sin(phase) + 1))
+                    mask_frame[y * 8 + x] = val
             self.gif_frames.append(mask_frame)
 
         self.is_streaming = True
@@ -517,14 +533,14 @@ class LedStreamerApp(tk.Tk):
             if self.stream_type == "gif":
                 payload = current_frame
             else:
-                # checker 또는 moving 테스트 패턴 모드일 때 고유 지정 RGB 주입
+                # scroll, ripple, checker, moving 애니메이션일 때 고유 지정 RGB 주입
                 payload = bytearray(192)
                 for i in range(64):
-                    if current_frame[i] > 0: 
-                        p = self.pixels[i]
-                        payload[i*3]     = p['r']
-                        payload[i*3 + 1] = p['g']
-                        payload[i*3 + 2] = p['b']
+                    br = current_frame[i] / 255.0 # 0.0 ~ 1.0 비율
+                    p = self.pixels[i]
+                    payload[i*3]     = int(p['r'] * br)
+                    payload[i*3 + 1] = int(p['g'] * br)
+                    payload[i*3 + 2] = int(p['b'] * br)
             
             try:
                 await self.client.write_gatt_char(CHARACTERISTIC_UUID, payload, response=False)
@@ -534,7 +550,6 @@ class LedStreamerApp(tk.Tk):
                 break
                 
             self.run_in_main_thread(lambda p=payload: self.sync_ui_with_frame(p))
-            
             frame_idx = (frame_idx + 1) % len(self.gif_frames)
             await asyncio.sleep(self.frame_duration)
 
@@ -546,10 +561,9 @@ class LedStreamerApp(tk.Tk):
                     self.pixels[i]['r'], self.pixels[i]['g'], self.pixels[i]['b'] = r, g, b
                     self.pixels[i]['br'] = max(r, g, b) 
             else:
-                # 테스트 모드 작동 시에는 설정된 색상을 망가뜨리지 않고 점등 플래그만 반영
                 for i in range(64):
                     r, g, b = frame_bytes[i*3], frame_bytes[i*3+1], frame_bytes[i*3+2]
-                    self.pixels[i]['br'] = 255 if (r > 0 or g > 0 or b > 0) else 0
+                    self.pixels[i]['br'] = max(r, g, b)
             self.refresh_all_canvases()
 
     def run_in_main_thread(self, func):
