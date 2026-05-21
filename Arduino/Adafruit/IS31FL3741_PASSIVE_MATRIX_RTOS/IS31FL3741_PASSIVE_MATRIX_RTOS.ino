@@ -2,6 +2,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7789.h>
 #include <NimBLEDevice.h>
+#include <Wire.h>
 #include <SPI.h>
 
 #include "Button.h"
@@ -27,6 +28,25 @@ const int MATRIX_WIDTH    = 8;
 const int MATRIX_HEIGHT   = 8;  
 const int HEADER_CURSOR_X = 20;
 const int HEADER_CURSOR_Y = 20; 
+
+const uint16_t ledMap[8][8] = {
+  // SW1: x(0~7) -> y값(0) + x*30
+  { 0,  30,  60,  90, 120, 150, 180, 210 },
+  // SW2: x(0~7) -> y값(1) + x*30
+  { 1,  31,  61,  91, 121, 151, 181, 211 },
+  // SW3: x(0~7) -> y값(2) + x*30
+  { 2,  32,  62,  92, 122, 152, 182, 212 },
+  // SW4: x(0~7) -> y값(3) + x*30
+  { 3,  33,  63,  93, 123, 153, 183, 213 },
+  // SW5: x(0~7) -> y값(4) + x*30
+  { 4,  34,  64,  94, 124, 154, 184, 214 },
+  // SW6: x(0~7) -> y값(5) + x*30
+  { 5,  35,  65,  95, 125, 155, 185, 215 },
+  // SW7: x(0~7) -> y값(6) + x*30
+  { 6,  36,  66,  96, 126, 156, 186, 216 },
+  // SW8: x(0~7) -> y값(7) + x*30
+  { 7,  37,  67,  97, 127, 157, 187, 217 }
+};
 
 Adafruit_IS31FL3741 ledMatrix;
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
@@ -103,9 +123,15 @@ void setup() {
 
 
   // 2. 물리 핀 및 입력부 세팅
-  pinMode(LED_BUILTIN, OUTPUT); 
-  digitalWrite(LED_BUILTIN, LOW);  
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(MATRIX_SHTDN, OUTPUT);
+  
+  digitalWrite(LED_BUILTIN, HIGH);  
+  digitalWrite(MATRIX_SHTDN, HIGH);
+  
   buttonInit(SWITCH_PIN);
+
+  delay(1000);
 
   // 3. I2C 하드웨어 버스 점검
   Serial.println("I2C Bus Init...");
@@ -124,9 +150,12 @@ void setup() {
       Serial.println("IS31FL3741 초기화 성공!");
       Wire.setClock(800000); // 고속 드라이빙 세팅
       ledMatrix.setLEDscaling(0xFF);
-      ledMatrix.setGlobalCurrent(0xFF);
-      ledMatrix.enable(true); 
+      ledMatrix.setGlobalCurrent(0x40);
       ledMatrix.fill(0);
+      ledMatrix.enable(true); 
+
+      
+      digitalWrite(LED_BUILTIN, LOW);
       break;
     }
   }
@@ -158,6 +187,8 @@ void setup() {
   );
 
   DEBUG_SERIAL.println("FreeRTOS 엔진 제어권 분할 성공. 메인 루프를 종료합니다.");
+
+  ledMatrix.setLEDPWM(0, 50);
 }
 
 // 아두이노 기본 loop()는 쓰지 않습니다. 
@@ -314,12 +345,12 @@ void updateTftDisplay() {
 }
 
 void drawMonoPixel(int16_t x, int16_t y, uint8_t brightness) {
-  if (x >= 0 && x < MATRIX_WIDTH && y >= 0 && y < MATRIX_HEIGHT) {
-    uint16_t lednum = (y * MATRIX_WIDTH) + x;
-    if (lednum < 351) {
-      ledMatrix.setLEDPWM(lednum, brightness); 
-    }
-  }
+  if (x < 0 || x >= MATRIX_WIDTH || y < 0 || y >= MATRIX_HEIGHT) return;
+
+  uint16_t lednum = ledMap[y][x]; // ledMap 배열에서 매핑된 번호를 가져옴
+  
+  // LED 제어
+  ledMatrix.setLEDPWM(lednum, brightness);
 }
 
 void buttonInit(uint8_t button_pin){

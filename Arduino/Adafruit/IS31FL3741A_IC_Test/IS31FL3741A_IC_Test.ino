@@ -30,22 +30,22 @@ unsigned long stateMillis = 0;
 unsigned long matrixUpdateMillis = 0;
 
 const uint16_t ledMap[8][8] = {
-  // x: CS1~CS8, y: SW1
-  {  0,  1,  2,  3,  4,  5,  6,  7 },
-  // y: SW2
-  { 39, 40, 41, 42, 43, 44, 45, 46 },
-  // y: SW3
-  { 78, 79, 80, 81, 82, 83, 84, 85 },
-  // y: SW4
-  {117,118,119,120,121,122,123,124 },
-  // y: SW5
-  {156,157,158,159,160,161,162,163 },
-  // y: SW6
-  {195,196,197,198,199,200,201,202 },
-  // y: SW7
-  {234,235,236,237,238,239,240,241 },
-  // y: SW8
-  {273,274,275,276,277,278,279,280 }
+  // SW1: x(0~7) -> y값(0) + x*30
+  { 0,  30,  60,  90, 120, 150, 180, 210 },
+  // SW2: x(0~7) -> y값(1) + x*30
+  { 1,  31,  61,  91, 121, 151, 181, 211 },
+  // SW3: x(0~7) -> y값(2) + x*30
+  { 2,  32,  62,  92, 122, 152, 182, 212 },
+  // SW4: x(0~7) -> y값(3) + x*30
+  { 3,  33,  63,  93, 123, 153, 183, 213 },
+  // SW5: x(0~7) -> y값(4) + x*30
+  { 4,  34,  64,  94, 124, 154, 184, 214 },
+  // SW6: x(0~7) -> y값(5) + x*30
+  { 5,  35,  65,  95, 125, 155, 185, 215 },
+  // SW7: x(0~7) -> y값(6) + x*30
+  { 6,  36,  66,  96, 126, 156, 186, 216 },
+  // SW8: x(0~7) -> y값(7) + x*30
+  { 7,  37,  67,  97, 127, 157, 187, 217 }
 };
 
 Adafruit_IS31FL3741 ledMatrix;
@@ -58,6 +58,12 @@ bool longPressExecuted = false;
 void setup() {
   DEBUG_SERIAL.begin(115200);
   
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(MATRIX_SHTDN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);
+  digitalWrite(MATRIX_SHTDN, HIGH);
+  delay(10); // 칩이 깨어날 시간을 줍니다
+
   Serial.println("I2C Bus Init...");
   if (!Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN)) {
     Serial.println("I2C Init Failed");
@@ -78,27 +84,46 @@ void setup() {
     }
     else{
       Serial.println("IS31FL3741 초기화 성공!");
-      Wire.setClock(400000); 
+      Wire.setClock(800000); 
       
-      ledMatrix.setGlobalCurrent(0x40);  // 처음에는 너무 높이지 말고 0x20~0x80 권장
+      ledMatrix.setGlobalCurrent(0x20);  // 처음에는 너무 높이지 말고 0x20~0x80 권장
       ledMatrix.setLEDscaling(0xFF);
       ledMatrix.fill(0);
       ledMatrix.enable(true);      // 칩 활성화
+      digitalWrite(LED_BUILTIN, LOW);
+      
       break;
     }
   }
 
   DEBUG_SERIAL.println("SETUP DONE");
 
-
-
 }
 
 void loop() {
-  // ledTestNonBlocking(500);
-  scanRawLedNum(0, 350, 30, 300);
+  ledTestNonBlocking(100);
+  // scanRawLedNum(0, 350, 30, 500);
+
+  // // 대각선 그리기
+  // for(int i = 0; i < 8; i++) {
+  //   drawMonoPixel(i, i, 50); 
+  // }
+  
+  // delay(1000);
+  // fillMatrix(0); // 전체 끄기
+  // delay(1000);
 
 }
+
+void drawMonoPixel(int16_t x, int16_t y, uint8_t brightness) {
+  if (x < 0 || x >= MATRIX_WIDTH || y < 0 || y >= MATRIX_HEIGHT) return;
+
+  uint16_t lednum = ledMap[y][x]; // ledMap 배열에서 매핑된 번호를 가져옴
+  
+  // LED 제어
+  ledMatrix.setLEDPWM(lednum, brightness);
+}
+
 
 void ledTestNonBlocking(const unsigned long pixelInterval) {
   // 함수 내부에서만 접근 가능하지만, 값은 메모리에 계속 유지되는 static 변수
@@ -128,9 +153,43 @@ void ledTestNonBlocking(const unsigned long pixelInterval) {
     }
 
     // 3. 새로 이동한 위치의 픽셀 켜기
-    drawMonoPixel(currentX, currentY, 10);
+    drawMonoPixel(currentX, currentY, 100);
   }
 }
+
+
+
+
+
+// 전체 화면을 특정 밝기로 채우는 함수 (유용하게 사용하세요)
+void fillMatrix(uint8_t brightness) {
+  for(int y = 0; y < MATRIX_HEIGHT; y++) {
+    for(int x = 0; x < MATRIX_WIDTH; x++) {
+      drawMonoPixel(x, y, brightness);
+    }
+  }
+}
+
+void scanRawLedNum(uint16_t start, uint16_t end, uint8_t brightness, unsigned long intervalMs) {
+  static uint16_t lednum = start;
+  static uint16_t prev = start;
+  static unsigned long lastTime = 0;
+
+  if (millis() - lastTime < intervalMs) return;
+  lastTime = millis();
+
+  ledMatrix.setLEDPWM(prev, 0);
+
+  Serial.print("LEDNUM = ");
+  Serial.println(lednum);
+
+  ledMatrix.setLEDPWM(lednum, brightness);
+  prev = lednum;
+
+  lednum++;
+  if (lednum > end) lednum = start;
+}
+
 
 bool i2cCheck(int interval) {
   static byte address = 1;
@@ -202,37 +261,4 @@ bool i2cCheckSingleShot() {
 
   // 장치를 하나라도 찾았다면 true, 하나도 없다면 false 반환
   return (devicesFound > 0);
-}
-
-void drawMonoPixel(int16_t x, int16_t y, uint8_t brightness) {
-  if (x < 0 || x >= MATRIX_WIDTH || y < 0 || y >= MATRIX_HEIGHT) return;
-
-  uint16_t lednum = ledMap[y][x];
-
-  bool ok = ledMatrix.setLEDPWM(lednum, brightness);
-
-  if (!ok) {
-    Serial.print("setLEDPWM failed: ");
-    Serial.println(lednum);
-  }
-}
-
-void scanRawLedNum(uint16_t start, uint16_t end, uint8_t brightness, unsigned long intervalMs) {
-  static uint16_t lednum = start;
-  static uint16_t prev = start;
-  static unsigned long lastTime = 0;
-
-  if (millis() - lastTime < intervalMs) return;
-  lastTime = millis();
-
-  ledMatrix.setLEDPWM(prev, 0);
-
-  Serial.print("LEDNUM = ");
-  Serial.println(lednum);
-
-  ledMatrix.setLEDPWM(lednum, brightness);
-  prev = lednum;
-
-  lednum++;
-  if (lednum > end) lednum = start;
 }
