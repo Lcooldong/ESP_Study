@@ -1,22 +1,25 @@
 #include <Adafruit_IS31FL3741.h>
 #include <Adafruit_GFX.h>
 #include <SPI.h>
+#include <Wire.h>
 #include "Button.h"
 
 #define DEBUG_SERIAL Serial
 
-#define TFT_RST           1  // Or set to -1 and connect to Arduino RESET pin
-#define TFT_CS            2  // TC Pin
-#define SWITCH_PIN        3
-#define TFT_DC            4
-#define I2C_SDA_PIN       5
-#define I2C_SCL_PIN       6
-#define TFT_SCK           7  // Not Use in this code
-#define MATRIX_SHTDN      8
-#define TFT_MOSI          9 // Not Use in this code
 
-#define UART_TX           43
-#define UART_RX           44
+// PIN FOR Seeed XIAO 
+#define TFT_RST           D0  // Or set to -1 and connect to Arduino RESET pin
+#define TFT_CS            D1  // TC Pin
+#define SWITCH_PIN        D2
+#define TFT_DC            D3
+#define I2C_SDA_PIN       D4
+#define I2C_SCL_PIN       D5
+#define TFT_SCK           D8   // Not Use in this code
+#define MATRIX_SHTDN      D9
+#define TFT_MOSI          D10 // Not Use in this code
+
+#define UART_TX           D6
+#define UART_RX           D7
 
 const int MATRIX_WIDTH = 8;   // ROW
 const int MATRIX_HEIGHT = 8;  // COLUMN
@@ -102,5 +105,92 @@ void ledTestNonBlocking(const unsigned long pixelInterval) {
 
     // 3. 새로 이동한 위치의 픽셀 켜기
     drawMonoPixel(currentX, currentY, 255);
+  }
+}
+
+bool i2cCheck(int interval) {
+  static byte address = 1;
+  static int devicesFound = 0;
+  static unsigned long lastActionTime = 0;
+  static bool isWaitingNextCycle = false;
+
+  unsigned long currentTime = millis();
+
+  if (isWaitingNextCycle) {
+    if (currentTime - lastActionTime >= (unsigned long)interval) {
+      isWaitingNextCycle = false; 
+      address = 1;               
+      devicesFound = 0;
+      Serial.println("\n--- 새 스캔 시작 ---");
+    }
+    return false; 
+  }
+
+  Wire.beginTransmission(address);
+  byte error = Wire.endTransmission();
+
+  if (error == 0) {
+    Serial.print("Found: 0x");
+    if (address < 16) Serial.print("0");
+    Serial.println(address, HEX);
+    devicesFound++;
+  }
+
+  address++;
+  if (address >= 127) {
+    bool result = (devicesFound > 0);
+    lastActionTime = currentTime; // 완료 시점 기록
+    isWaitingNextCycle = true;    // 대기 모드 진입
+
+    Serial.print("Scan Done. Found: ");
+    Serial.println(devicesFound);
+    return true; 
+  }
+
+  return false;
+}
+
+
+// setup()에서 한 번만 호출하여 I2C 디바이스를 완벽히 스캔하는 함수
+bool i2cCheckSingleShot() {
+  int devicesFound = 0;
+  
+  Serial.println("\n--- I2C 스캔 시작 (setup) ---");
+
+  // 1번부터 126번 주소까지 한 번에 쭉 돌아버립니다.
+  for (byte address = 1; address < 127; address++) {
+    Wire.beginTransmission(address);
+    byte error = Wire.endTransmission();
+
+    if (error == 0) {
+      Serial.print("Found: 0x");
+      if (address < 16) Serial.print("0");
+      Serial.println(address, HEX);
+      devicesFound++;
+    }
+    // 주소 간 아주 미세한 안정화 대기 (필요시 1~2ms 추가 가능, 생략 무방)
+    delay(1); 
+  }
+
+  Serial.print("Scan Done. Total Found: ");
+  Serial.println(devicesFound);
+  Serial.println("-----------------------------\n");
+
+  // 장치를 하나라도 찾았다면 true, 하나도 없다면 false 반환
+  return (devicesFound > 0);
+}
+
+void drawMonoPixel(int16_t x, int16_t y, uint8_t brightness) {
+  // 매트릭스 경계 검사 (안전장치)
+  if (x >= 0 && x < MATRIX_WIDTH && y >= 0 && y < MATRIX_HEIGHT) {
+    
+    // 2차원 좌표를 1차원 선형 LED 번호(0 ~ 350)로 변환하는 공식
+    uint16_t lednum = (y * MATRIX_WIDTH) + x;
+    
+    // 칩이 지원하는 최대 채널 수 검사
+    if (lednum < 351) {
+      // 로우레벨 기본 함수로 특정 번호의 단색 LED 밝기 직접 제어
+      ledMatrix.setLEDPWM(lednum, brightness); 
+    }
   }
 }

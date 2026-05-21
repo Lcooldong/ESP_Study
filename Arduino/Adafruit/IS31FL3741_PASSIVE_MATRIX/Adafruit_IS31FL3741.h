@@ -2,7 +2,7 @@
 #define _ADAFRUIT_IS31FL3741_H_
 
 #include <Adafruit_BusIO_Register.h>
-#include <Adafruit_GFX.h>
+#include <Adafruit_GFX.h>     
 #include <Adafruit_I2CDevice.h>
 #include <Arduino.h>
 
