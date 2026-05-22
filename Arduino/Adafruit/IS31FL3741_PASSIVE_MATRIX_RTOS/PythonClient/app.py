@@ -1,3 +1,30 @@
+# pip install bleak Pillow numpy
+import sys
+import subprocess
+import importlib
+
+
+def install_if_missing(package_name, import_name=None):
+    if import_name is None:
+        import_name = package_name
+
+    try:
+        importlib.import_module(import_name)
+    except ImportError:
+        print(f"{package_name} 모듈이 없어 설치합니다...")
+        subprocess.check_call([
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            package_name
+        ])
+
+
+install_if_missing("bleak")
+install_if_missing("Pillow", "PIL")
+install_if_missing("numpy")
+
 import asyncio
 import threading
 import tkinter as tk
