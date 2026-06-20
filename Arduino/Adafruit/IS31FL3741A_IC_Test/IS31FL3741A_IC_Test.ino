@@ -5,7 +5,7 @@
 #include "Button.h"
 
 #define DEBUG_SERIAL Serial
-
+#define LED_BUILTIN        22
 
 // PIN FOR Seeed XIAO 
 #define TFT_RST           D0  // Or set to -1 and connect to Arduino RESET pin

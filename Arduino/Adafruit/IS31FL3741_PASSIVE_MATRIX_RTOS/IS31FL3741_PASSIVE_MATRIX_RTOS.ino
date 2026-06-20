@@ -379,7 +379,7 @@ void buttonTask(){
       } else {
           DEBUG_SERIAL.println("--- Short Press Detected");         // 짧게 눌렀을 때
           currentAnimationMode++;
-          if (currentAnimationMode > 3) currentAnimationMode = 0; // 3번 모드 다음엔 0(꺼짐)으로
+          if (currentAnimationMode > MAX_ANIMATION_MODE) currentAnimationMode = 0; // 3번 모드 다음엔 0(꺼짐)으로
           DEBUG_SERIAL.printf("Animation Mode Changed to: %d\n", currentAnimationMode);
           // digitalWrite(LED_BUILTIN, HIGH);
       }
